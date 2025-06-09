@@ -2,6 +2,7 @@ module Parser where
 import           Control.Applicative
 import           GHC.Natural              (Natural)
 import GHC.Generics (D1)
+import Distribution.PackageDescription (Condition)
 
 assign = ":=";
 colon = ":";
@@ -108,6 +109,12 @@ nat = read <$> (some parseDigit)
 space :: Parser ()
 space = (\x -> ()) <$> (many $ char ' ')
 
+parseOptionalsString :: [String] -> Parser String
+parseOptionalsString opts =
+  asum (map tryString opts) <|> return ""
+  where
+    tryString s = string s
+
 -- ignore surrounding whitespace
 token :: Parser a -> Parser a
 token pa = do
@@ -120,10 +127,59 @@ token pa = do
 symbol :: String -> Parser String
 symbol xs = token $ string xs
 
-isAlpha :: Char -> Bool
-isAlpha c = elem c (['a'..'z'] ++ ['A'..'Z'])
-isAlphaNum :: Char -> Bool
-isAlphaNum c = isAlpha c || elem c ['0'..'9']
+data Term = Term FACTOR String FACTOR deriving (Show)
+data Exp = Exp String Term String deriving (Show)
+data RelOp = Equal String | NotEqual String | LessThan String | GreaterThan String | LessEqual String | GreaterEqual String deriving (Show)
+data CONDITION = Condition Exp RelOp Exp deriving (Show)
+data RELCONDITION = RelCondition FACTOR String FACTOR deriving (Show)
+data FACTOR = FactorNumber Natural | FactorLValue LVALUE | FactorParen CONDITION deriving (Show)
+data LVALUE = Identifier String deriving (Show)
+
+parseExp :: Parser Exp
+parseExp = do
+    op1 <- parseOptionalsString ["+", "-"]
+    term <- parseTerm
+    op2 <- parseOptionalsString ["+", "-"]
+    term2 <- parseTerm
+    return (Exp op1 term op2 term2)
+
+parseTerm :: Parser Term
+parseTerm = do
+    f1 <- parseFactor
+    op <- parseOptionalsString ["*", "/"]
+    f2 <- parseFactor
+    return (Term f1 op f2)
+
+parseRelOp :: Parser RelOp
+parseRelOp = 
+        (Equal <$> symbol equal)
+    <|> (NotEqual <$> symbol nequal)
+    <|> (LessThan <$> symbol less)
+    <|> (GreaterThan <$> symbol greater)
+    <|> (LessEqual <$> symbol lesseq)
+    <|> (GreaterEqual <$> symbol greatereq)
+
+parseCondition :: Parser CONDITION
+parseCondition = do 
+    leftExp <- parseExp
+    relOp <- parseRelOp
+    rightExp <- parseExp
+    return (Condition leftExp relOp rightExp)
+
+parseFactor :: Parser FACTOR
+parseFactor =
+        (FactorNumber <$> number)
+    <|> (FactorLValue <$> parseLValue)
+    <|> do
+        symbol lparen
+        cond <- parseCondition
+        symbol rparen
+        return (FactorParen cond)
+
+parseLValue :: Parser LVALUE
+parseLValue = do
+    id <- identifier
+    return (Identifier id)
 
 number :: Parser Natural
 number = do
@@ -135,3 +191,8 @@ identifier = do
     first <- sat isAlpha
     rest <- many (sat isAlphaNum)
     return (first : rest)
+
+isAlpha :: Char -> Bool
+isAlpha c = elem c (['a'..'z'] ++ ['A'..'Z'])
+isAlphaNum :: Char -> Bool
+isAlphaNum c = isAlpha c || elem c ['0'..'9']
