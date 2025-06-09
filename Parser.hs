@@ -1,6 +1,7 @@
 module Parser where
 import           Control.Applicative
 import           GHC.Natural              (Natural)
+import GHC.Generics (D1)
 
 assign = ":=";
 colon = ":";
@@ -73,9 +74,6 @@ instance Alternative Parser where
 parse :: Parser a -> String -> Maybe (a, String)
 parse (P p) cs = p cs
 
-parse :: Parser a -> String -> Maybe (a, String)
-parse (P p) cs = p cs
-
 -- parse one character
 item :: Parser Char
 item = P $ foo
@@ -90,8 +88,8 @@ sat p = do
     if p x then return x else empty
 
 -- parse a digit
-digit :: Parser Char
-digit = sat (\x -> elem x ['0'..'9'])
+parseDigit :: Parser Char
+parseDigit = sat (\x -> elem x ['0'..'9'])
 
 -- parse the character x
 char :: Char -> Parser Char
@@ -104,7 +102,7 @@ string (x:xs) = (\x xs -> x:xs) <$> (char x) <*> (string xs)
 
 -- parse a natural number
 nat :: Parser Natural
-nat = read <$> (some digit)
+nat = read <$> (some parseDigit)
 
 -- throw away space
 space :: Parser ()
@@ -121,3 +119,19 @@ token pa = do
 -- parse a symbol, ignoring whitespace
 symbol :: String -> Parser String
 symbol xs = token $ string xs
+
+isAlpha :: Char -> Bool
+isAlpha c = elem c (['a'..'z'] ++ ['A'..'Z'])
+isAlphaNum :: Char -> Bool
+isAlphaNum c = isAlpha c || elem c ['0'..'9']
+
+number :: Parser Natural
+number = do
+    n <- nat
+    return n
+
+identifier :: Parser String
+identifier = do
+    first <- sat isAlpha
+    rest <- many (sat isAlphaNum)
+    return (first : rest)
