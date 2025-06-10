@@ -145,12 +145,18 @@ data ASSIGN = ASSIGN String deriving (Show)
 data Identifier = Identifier String deriving (Show)
 
 data Statement =
-    Assignment LValue ASSIGN Condition
-    | CallStatement KW_CALL Identifier LPAREN RPAREN
-    | ReadStatement KW_READ LValue
-    | WriteStatement KW_WRITE Exp
-    | WhileStatement KW_WHILE Condition KW_DO Statement
-    | IfStatement KW_IF Condition KW_THEN Statement KW_ELSE Statement
+    -- Assignment -> LValue Assign Condition
+    Assignment LValue Condition
+    -- CallStatement -> KW_CALL Identifier LPAREN RPAREN
+    | CallStatement Identifier
+    -- ReadStatement -> KW_READ LValue
+    | ReadStatement LValue
+    -- WriteStatement -> KW_WRITE Exp
+    | WriteStatement Exp
+    -- WhileStatement -> KW_WHILE Condition KW_DO Statement
+    | WhileStatement Condition Statement
+    -- IfStatement -> KW_IF Condition KW_THEN Statement KW_ELSE Statement
+    | IfStatement Condition Statement Statement
 data Term = Term Factor String Factor deriving (Show)
 data Exp = Exp String Term String Term deriving (Show)
 data RelOp = Equal String | NotEqual String | LessThan String | GreaterThan String | LessEqual String | GreaterEqual String deriving (Show)
@@ -158,6 +164,13 @@ data Condition = Condition Exp RelOp Exp deriving (Show)
 data RelCondition = RelCondition Factor String Factor deriving (Show)
 data Factor = FactorNumber Natural | FactorLValue LValue | FactorParen Condition deriving (Show)
 data LValue = LValue Identifier deriving (Show)
+
+parseStatement :: Parser Statement
+parseStatement = do 
+    lval <- parseLValue
+    parseAssign
+    cond <- parseCondition
+    return (Assignment lval )
 
 parseExp :: Parser Exp
 parseExp = do
