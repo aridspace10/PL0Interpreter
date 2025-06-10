@@ -1,9 +1,11 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use newtype instead of data" #-}
+{-# HLINT ignore "Use <$>" #-}
 module Parser where
 import           Control.Applicative
 import           GHC.Natural              (Natural)
 import Language.Haskell.TH (Con)
+import GHC.TypeError (Assert)
 
 assign = ":=";
 colon = ":";
@@ -165,12 +167,63 @@ data RelCondition = RelCondition Factor String Factor deriving (Show)
 data Factor = FactorNumber Natural | FactorLValue LValue | FactorParen Condition deriving (Show)
 data LValue = LValue Identifier deriving (Show)
 
+parseIfStatement :: Parser Statement
+parseIfStatement = do 
+    symbol kwIf
+    cond <- parseCondition
+    symbol kwThen
+    stat1 <- parseStatement
+    symbol kwElse
+    stat2 <- parseStatement
+    return (IfStatement cond stat1 stat2)
+
+parseAssignment :: Parser Statement
+parseAssignment = do
+    lval <- parseLValue
+    symbol assign
+    cond <- parseCondition
+    return (Assignment lval cond)
+
+parseReadStatement :: Parser Statement
+parseReadStatement = do
+    symbol kwRead
+    lval <- parseLValue
+    return (ReadStatement lval)
+
+parseCallStatement :: Parser Statement
+parseCallStatement = do
+    symbol kwCall
+    ident <- identifier
+    return (CallStatement ident)
+
+parseWhileStatement :: Parser Statement
+parseWhileStatement = do
+    symbol kwWhile
+    cond <- parseCondition
+    symbol kwDo
+    stat <- parseStatement
+    return (WhileStatement cond stat)
+
+parseWriteStatement :: Parser Statement
+parseWriteStatement = do 
+    symbol kwWrite
+    exp <- parseExp
+    return (WriteStatement exp)
+
 parseStatement :: Parser Statement
 parseStatement = do 
-    lval <- parseLValue
-    parseAssign
-    cond <- parseCondition
-    return (Assignment lval )
+    parseAssignment
+    <|>
+    parseCallStatement
+    <|>
+    parseReadStatement
+    <|>
+    parseWriteStatement
+    <|>
+    parseWhileStatement
+    <|>
+    parseIfStatement
+
 
 parseExp :: Parser Exp
 parseExp = do
