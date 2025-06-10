@@ -3,6 +3,7 @@
 module Parser where
 import           Control.Applicative
 import           GHC.Natural              (Natural)
+import Language.Haskell.TH (Con)
 
 assign = ":=";
 colon = ":";
@@ -127,29 +128,36 @@ token pa = do
 symbol :: String -> Parser String
 symbol xs = token $ string xs
 
-data KW_IF = KW_IF String
-data KW_THEN = KW_THEN String
-data KW_ELSE = KW_ELSE String
-data KW_WHILE = KW_WHILE String
-data KW_READ = KW_READ String
-data KW_WRITE = KW_WRITE String
-data KW_PROCEDURE = KW_PROCEDURE String
-data KW_CALL = KW_CALL String
-data KW_BEGIN = KW_BEGIN String
-data KW_END = KW_END String
-data KW_DO = KW_DO String
-data LPAREN = LPAREN String
-data RPAREN = RPAREN String
-data ASSIGN = ASSIGN String
+data KW_IF = KW_IF String deriving (Show)
+data KW_THEN = KW_THEN String deriving (Show)
+data KW_ELSE = KW_ELSE String deriving (Show)
+data KW_WHILE = KW_WHILE String deriving (Show)
+data KW_READ = KW_READ String deriving (Show)
+data KW_WRITE = KW_WRITE String deriving (Show)
+data KW_PROCEDURE = KW_PROCEDURE String deriving (Show)
+data KW_CALL = KW_CALL String deriving (Show)
+data KW_BEGIN = KW_BEGIN String deriving (Show)
+data KW_END = KW_END String deriving (Show)
+data KW_DO = KW_DO String deriving (Show)
+data LPAREN = LPAREN String deriving (Show)
+data RPAREN = RPAREN String deriving (Show)
+data ASSIGN = ASSIGN String deriving (Show)
+data Identifier = Identifier String deriving (Show)
 
-data IfStatement = IfStatement KW_IF Condition KW_THEN Statement KW_ELSE Statement
+data Statement =
+    Assignment LVALUE ASSIGN Condition
+    | CallStatement KW_CALL Identifier LPAREN RPAREN
+    | ReadStatement KW_READ LVALUE
+    | WriteStatement KW_WRITE Exp
+    | WhileStatement KW_WHILE Condition KW_DO Statement
+    | IfStatement KW_IF Condition KW_THEN Statement KW_ELSE Statement
 data Term = Term FACTOR String FACTOR deriving (Show)
 data Exp = Exp String Term String Term deriving (Show)
 data RelOp = Equal String | NotEqual String | LessThan String | GreaterThan String | LessEqual String | GreaterEqual String deriving (Show)
 data Condition = Condition Exp RelOp Exp deriving (Show)
 data RelCondition = RelCondition FACTOR String FACTOR deriving (Show)
 data FACTOR = FactorNumber Natural | FactorLValue LVALUE | FactorParen Condition deriving (Show)
-data LVALUE = Identifier String deriving (Show)
+data LVALUE = LVALUE Identifier deriving (Show)
 
 parseExp :: Parser Exp
 parseExp = do
