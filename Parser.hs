@@ -145,19 +145,19 @@ data ASSIGN = ASSIGN String deriving (Show)
 data Identifier = Identifier String deriving (Show)
 
 data Statement =
-    Assignment LVALUE ASSIGN Condition
+    Assignment LValue ASSIGN Condition
     | CallStatement KW_CALL Identifier LPAREN RPAREN
-    | ReadStatement KW_READ LVALUE
+    | ReadStatement KW_READ LValue
     | WriteStatement KW_WRITE Exp
     | WhileStatement KW_WHILE Condition KW_DO Statement
     | IfStatement KW_IF Condition KW_THEN Statement KW_ELSE Statement
-data Term = Term FACTOR String FACTOR deriving (Show)
+data Term = Term Factor String Factor deriving (Show)
 data Exp = Exp String Term String Term deriving (Show)
 data RelOp = Equal String | NotEqual String | LessThan String | GreaterThan String | LessEqual String | GreaterEqual String deriving (Show)
 data Condition = Condition Exp RelOp Exp deriving (Show)
-data RelCondition = RelCondition FACTOR String FACTOR deriving (Show)
-data FACTOR = FactorNumber Natural | FactorLValue LVALUE | FactorParen Condition deriving (Show)
-data LVALUE = LVALUE Identifier deriving (Show)
+data RelCondition = RelCondition Factor String Factor deriving (Show)
+data Factor = FactorNumber Natural | FactorLValue LValue | FactorParen Condition deriving (Show)
+data LValue = LValue Identifier deriving (Show)
 
 parseExp :: Parser Exp
 parseExp = do
@@ -190,7 +190,7 @@ parseCondition = do
     rightExp <- parseExp
     return (Condition leftExp relOp rightExp)
 
-parseFactor :: Parser FACTOR
+parseFactor :: Parser Factor
 parseFactor =
         (FactorNumber <$> number)
     <|> (FactorLValue <$> parseLValue)
@@ -200,21 +200,21 @@ parseFactor =
         symbol rparen
         return (FactorParen cond)
 
-parseLValue :: Parser LVALUE
+parseLValue :: Parser LValue
 parseLValue = do
     id <- identifier
-    return (Identifier id)
+    return (LValue id)
 
 number :: Parser Natural
 number = do
     n <- nat
     return n
 
-identifier :: Parser String
+identifier :: Parser Identifier
 identifier = do
     first <- sat isAlpha
     rest <- many (sat isAlphaNum)
-    return (first : rest)
+    return (Identifier (first : rest))
 
 isAlpha :: Char -> Bool
 isAlpha c = elem c (['a'..'z'] ++ ['A'..'Z'])
