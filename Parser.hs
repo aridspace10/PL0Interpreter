@@ -4,8 +4,6 @@
 module Parser where
 import           Control.Applicative
 import           GHC.Natural              (Natural)
-import Language.Haskell.TH (Con)
-import GHC.TypeError (Assert)
 
 assign = ":=";
 colon = ":";
@@ -161,9 +159,10 @@ data Statement =
     | IfStatement Condition Statement Statement
 data Term = Term Factor String Factor deriving (Show)
 data Exp = Exp String Term String Term deriving (Show)
-data RelOp = Equal String | NotEqual String | LessThan String | GreaterThan String | LessEqual String | GreaterEqual String deriving (Show)
-data Condition = Condition Exp RelOp Exp deriving (Show)
-data RelCondition = RelCondition Factor String Factor deriving (Show)
+-- RelOp -> == | >= | > | <= | < | !=
+data RelOp = RelOp String deriving (Show)
+data Condition = Condition RelCondition deriving (Show)
+data RelCondition = RelCondition Exp deriving (Show)
 data Factor = FactorNumber Natural | FactorLValue LValue | FactorParen Condition deriving (Show)
 data LValue = LValue Identifier deriving (Show)
 
@@ -224,7 +223,6 @@ parseStatement = do
     <|>
     parseIfStatement
 
-
 parseExp :: Parser Exp
 parseExp = do
     op1 <- parseOptionalsString ["+", "-"]
@@ -241,20 +239,21 @@ parseTerm = do
     return (Term f1 op f2)
 
 parseRelOp :: Parser RelOp
-parseRelOp = 
-        (Equal <$> symbol equal)
-    <|> (NotEqual <$> symbol nequal)
-    <|> (LessThan <$> symbol less)
-    <|> (GreaterThan <$> symbol greater)
-    <|> (LessEqual <$> symbol lesseq)
-    <|> (GreaterEqual <$> symbol greatereq)
+parseRelOp = do
+    op <- parseOptionalsString ["==", "!=", ">", ">=", "<", "<="]
+    return (RelOp op)
 
 parseCondition :: Parser Condition
-parseCondition = do 
+parseCondition = do
+    cond <- parseRelCondition
+    return (Condition cond)
+
+parseRelCondition :: Parser RelCondition
+parseRelCondition = do 
     leftExp <- parseExp
     relOp <- parseRelOp
     rightExp <- parseExp
-    return (Condition leftExp relOp rightExp)
+    return (RelCondition leftExp)
 
 parseFactor :: Parser Factor
 parseFactor =
