@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use newtype instead of data" #-}
 module Parser where
 import           Control.Applicative
 import           GHC.Natural              (Natural)
@@ -128,6 +130,17 @@ symbol xs = token $ string xs
 data KW_IF = KW_IF String
 data KW_THEN = KW_THEN String
 data KW_ELSE = KW_ELSE String
+data KW_WHILE = KW_WHILE String
+data KW_READ = KW_READ String
+data KW_WRITE = KW_WRITE String
+data KW_PROCEDURE = KW_PROCEDURE String
+data KW_CALL = KW_CALL String
+data KW_BEGIN = KW_BEGIN String
+data KW_END = KW_END String
+data KW_DO = KW_DO String
+data LPAREN = LPAREN String
+data RPAREN = RPAREN String
+data ASSIGN = ASSIGN String
 
 data IfStatement = IfStatement KW_IF Condition KW_THEN Statement KW_ELSE Statement
 data Term = Term FACTOR String FACTOR deriving (Show)
