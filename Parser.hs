@@ -1,8 +1,6 @@
 module Parser where
 import           Control.Applicative
 import           GHC.Natural              (Natural)
-import GHC.Generics (D1)
-import Distribution.PackageDescription (Condition)
 
 assign = ":=";
 colon = ":";
@@ -127,12 +125,17 @@ token pa = do
 symbol :: String -> Parser String
 symbol xs = token $ string xs
 
+data KW_IF = KW_IF String
+data KW_THEN = KW_THEN String
+data KW_ELSE = KW_ELSE String
+
+data IfStatement = IfStatement KW_IF Condition KW_THEN Statement KW_ELSE Statement
 data Term = Term FACTOR String FACTOR deriving (Show)
-data Exp = Exp String Term String deriving (Show)
+data Exp = Exp String Term String Term deriving (Show)
 data RelOp = Equal String | NotEqual String | LessThan String | GreaterThan String | LessEqual String | GreaterEqual String deriving (Show)
-data CONDITION = Condition Exp RelOp Exp deriving (Show)
-data RELCONDITION = RelCondition FACTOR String FACTOR deriving (Show)
-data FACTOR = FactorNumber Natural | FactorLValue LVALUE | FactorParen CONDITION deriving (Show)
+data Condition = Condition Exp RelOp Exp deriving (Show)
+data RelCondition = RelCondition FACTOR String FACTOR deriving (Show)
+data FACTOR = FactorNumber Natural | FactorLValue LVALUE | FactorParen Condition deriving (Show)
 data LVALUE = Identifier String deriving (Show)
 
 parseExp :: Parser Exp
@@ -159,7 +162,7 @@ parseRelOp =
     <|> (LessEqual <$> symbol lesseq)
     <|> (GreaterEqual <$> symbol greatereq)
 
-parseCondition :: Parser CONDITION
+parseCondition :: Parser Condition
 parseCondition = do 
     leftExp <- parseExp
     relOp <- parseRelOp
