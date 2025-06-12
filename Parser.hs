@@ -143,7 +143,7 @@ data LPAREN = LPAREN String deriving (Show)
 data RPAREN = RPAREN String deriving (Show)
 data ASSIGN = ASSIGN String deriving (Show)
 
-data StatementList = StatementList Statement
+data StatementList = ComplexStatement Statement StatementList | SimpleStatement Statement deriving Show
 data Statement =
     -- Assignment -> LValue Assign Condition
     Assignment LValue Condition
@@ -156,7 +156,7 @@ data Statement =
     -- WhileStatement -> KW_WHILE Condition KW_DO Statement
     | WhileStatement Condition Statement
     -- IfStatement -> KW_IF Condition KW_THEN Statement KW_ELSE Statement
-    | IfStatement Condition Statement Statement
+    | IfStatement Condition Statement Statement deriving Show
 
 data Exp = 
     SingleExp String Term
@@ -242,6 +242,16 @@ parseStatement = do
     <|>
     parseIfStatement
 
+parseStatementList :: Parser StatementList
+parseStatementList = do
+    stat1 <- parseStatement
+    symbol semicolon
+    stat2 <- parseStatementList
+    return (ComplexStatement stat1 stat2)
+    <|> do
+    stat <- parseStatement 
+    return (SimpleStatement stat)
+
 parseExp :: Parser Exp
 parseExp = do
     op <- parseOptionalsString ["+", "-"]
@@ -274,7 +284,10 @@ parseCondition = do
     exp1 <- parseExp
     op <- parseRelOp
     exp2 <- parseExp
-    return (SimpleCondition exp1 op exp2)
+    return (RelationalCondition exp1 op exp2)
+    <|> do
+    exp <- parseExp 
+    return (SimpleCondition exp)
     
 
 parseFactor :: Parser Factor
