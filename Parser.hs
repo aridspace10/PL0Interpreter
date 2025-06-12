@@ -142,8 +142,8 @@ data KW_DO = KW_DO String deriving (Show)
 data LPAREN = LPAREN String deriving (Show)
 data RPAREN = RPAREN String deriving (Show)
 data ASSIGN = ASSIGN String deriving (Show)
-data Identifier = Identifier String deriving (Show)
 
+data StatementList = StatementList Statement
 data Statement =
     -- Assignment -> LValue Assign Condition
     Assignment LValue Condition
@@ -157,14 +157,33 @@ data Statement =
     | WhileStatement Condition Statement
     -- IfStatement -> KW_IF Condition KW_THEN Statement KW_ELSE Statement
     | IfStatement Condition Statement Statement
-data Term = Term Factor String Factor deriving (Show)
-data Exp = Exp String Term String Term deriving (Show)
--- RelOp -> == | >= | > | <= | < | !=
+
+data Exp = 
+    SingleExp String Term
+    | BinaryExp String Term Exp  -- operator, left term, right expression
+    deriving (Show)
+
+data Term = 
+    SingleFactor Factor
+    | BinaryTerm Factor String Term  -- left factor, operator, right term
+    deriving (Show)
+
 data RelOp = RelOp String deriving (Show)
-data Condition = Condition RelCondition deriving (Show)
-data RelCondition = RelCondition Exp deriving (Show)
-data Factor = FactorNumber Natural | FactorLValue LValue | FactorParen Condition deriving (Show)
+
+-- Fixed condition to properly store both expressions and operator
+data Condition = 
+    SimpleCondition Exp
+    | RelationalCondition Exp RelOp Exp
+    deriving (Show)
+
+data Factor = 
+    FactorNumber Natural 
+    | FactorLValue LValue 
+    | FactorParen Condition 
+    deriving (Show)
+
 data LValue = LValue Identifier deriving (Show)
+data Identifier = Identifier String deriving (Show)
 
 parseIfStatement :: Parser Statement
 parseIfStatement = do 
@@ -225,18 +244,25 @@ parseStatement = do
 
 parseExp :: Parser Exp
 parseExp = do
-    op1 <- parseOptionalsString ["+", "-"]
+    op <- parseOptionalsString ["+", "-"]
     term <- parseTerm
-    op2 <- parseOptionalsString ["+", "-"]
-    term2 <- parseTerm
-    return (Exp op1 term op2 term2)
+    ex <- parseExp
+    return (BinaryExp op term ex)
+    <|> do
+    op <- parseOptionalsString ["+", "-"]
+    term <- parseTerm
+    return (SingleExp op term)
 
 parseTerm :: Parser Term
 parseTerm = do
-    f1 <- parseFactor
+    f <- parseFactor
     op <- parseOptionalsString ["*", "/"]
-    f2 <- parseFactor
-    return (Term f1 op f2)
+    t <- parseTerm
+    return (BinaryTerm f op t)
+    <|> do
+    f <- parseFactor
+    return (SingleFactor f)
+    
 
 parseRelOp :: Parser RelOp
 parseRelOp = do
@@ -245,15 +271,11 @@ parseRelOp = do
 
 parseCondition :: Parser Condition
 parseCondition = do
-    cond <- parseRelCondition
-    return (Condition cond)
-
-parseRelCondition :: Parser RelCondition
-parseRelCondition = do 
-    leftExp <- parseExp
-    relOp <- parseRelOp
-    rightExp <- parseExp
-    return (RelCondition leftExp)
+    exp1 <- parseExp
+    op <- parseRelOp
+    exp2 <- parseExp
+    return (SimpleCondition exp1 op exp2)
+    
 
 parseFactor :: Parser Factor
 parseFactor =
