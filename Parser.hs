@@ -143,8 +143,13 @@ data LPAREN = LPAREN String deriving (Show)
 data RPAREN = RPAREN String deriving (Show)
 data ASSIGN = ASSIGN String deriving (Show)
 
+data TypeDefList = TypeDefList [TypeDef]
+data TypeDef = TypeDef Identifier Type
+data Type = 
+    TypeIdentifer Identifier
+    | SubrangeType Constant Constant
 data VarDeclList = VarDeclList [VarDecl]
-data VarDecl = VarDecl Identifier TypeIdentifer
+data VarDecl = VarDecl Identifier Type
 data ProcedureDef = ProcedureDef ProcedureHead Block
 data ProcedureHead = ProcedureHead Identifier deriving Show
 data CompoundStatement = CompoundStatement StatementList
@@ -190,12 +195,48 @@ data Factor =
 data LValue = LValue Identifier deriving (Show)
 data Identifier = Identifier String deriving (Show)
 
+parseTypeDefList :: Parser TypeDefList
+parseTypeDefList = do
+    symbol kwType
+    t1 <- parseTypeDef
+    t2 <- many parseTypeDef
+    return (TypeDefList t1 : t2)
+
+parseTypeDef :: Parser TypeDef 
+parseTypeDef = do
+    id <- identifier
+    symbol equal
+    ty <- parseType
+    symbol semicolon
+    return (TypeDef id ty)
+
+
+parseType :: Parser Type 
+parseType =
+    parseSubrangeType
+    <|>
+    parseTypeIdentifer
+
+parseSubrangeType :: Parser Type
+parseSubrangeType = do
+    symbol lbracket
+    c1 <- parseConstant 
+    symbol range
+    c2 <- parseConstant 
+    symbol rbracket 
+    return (SubrangeType c1 c2)
+
+parseTypeIdentifer :: Parser Type
+parseTypeIdentifer = do
+    id <- identifier
+    return (TypeIdentifer id)
+
 parseVarDeclList :: Parser VarDeclList
 parseVarDeclList = do
     symbol kwVar
     var1 <- parseVarDecl
     var2 <- many parseVarDecl
-    return (var1 : var2)
+    return (VarDeclList var1 : var2)
 
 
 parseVarDecl :: Parser VarDecl
