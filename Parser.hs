@@ -143,6 +143,9 @@ data LPAREN = LPAREN String deriving (Show)
 data RPAREN = RPAREN String deriving (Show)
 data ASSIGN = ASSIGN String deriving (Show)
 
+
+data ProcedureDef = ProcedureDef ProcedureHead Block
+data ProcedureHead = ProcedureHead Identifier deriving Show
 data CompoundStatement = CompoundStatement StatementList
 data StatementList = ComplexStatement Statement StatementList | SimpleStatement Statement deriving Show
 data Statement =
@@ -185,6 +188,22 @@ data Factor =
 
 data LValue = LValue Identifier deriving (Show)
 data Identifier = Identifier String deriving (Show)
+
+parseProcedureDef :: Parser ProcedureDef
+parseProcedureDef = do
+    head <- parseProcedureHead
+    symbol equal
+    blk <- parseBlock
+    symbol semicolon
+    return (ProcedureDef head blk)
+
+parseProcedureHead :: Parser ProcedureHead
+parseProcedureHead = do
+    symbol kwProcedure
+    id <- identifier
+    symbol lparen
+    symbol rparen
+    return (ProcedureHead id)
 
 parseCompoundStatement :: Parser CompoundStatement
 parseCompoundStatement = do
