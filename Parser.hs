@@ -143,7 +143,8 @@ data LPAREN = LPAREN String deriving (Show)
 data RPAREN = RPAREN String deriving (Show)
 data ASSIGN = ASSIGN String deriving (Show)
 
-
+data VarDeclList = VarDeclList [VarDecl]
+data VarDecl = VarDecl Identifier TypeIdentifer
 data ProcedureDef = ProcedureDef ProcedureHead Block
 data ProcedureHead = ProcedureHead Identifier deriving Show
 data CompoundStatement = CompoundStatement StatementList
@@ -188,6 +189,22 @@ data Factor =
 
 data LValue = LValue Identifier deriving (Show)
 data Identifier = Identifier String deriving (Show)
+
+parseVarDeclList :: Parser VarDeclList
+parseVarDeclList = do
+    symbol kwVar
+    var1 <- parseVarDecl
+    var2 <- many parseVarDecl
+    return (var1 : var2)
+
+
+parseVarDecl :: Parser VarDecl
+parseVarDecl = do 
+    id <- identifier
+    symbol colon
+    ty <- parseTypeIdentifer
+    symbol semicolon
+    return (VarDecl id ty)
 
 parseProcedureDef :: Parser ProcedureDef
 parseProcedureDef = do
