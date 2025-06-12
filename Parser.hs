@@ -143,6 +143,7 @@ data LPAREN = LPAREN String deriving (Show)
 data RPAREN = RPAREN String deriving (Show)
 data ASSIGN = ASSIGN String deriving (Show)
 
+data CompoundStatement = CompoundStatement StatementList
 data StatementList = ComplexStatement Statement StatementList | SimpleStatement Statement deriving Show
 data Statement =
     -- Assignment -> LValue Assign Condition
@@ -184,6 +185,13 @@ data Factor =
 
 data LValue = LValue Identifier deriving (Show)
 data Identifier = Identifier String deriving (Show)
+
+parseCompoundStatement :: Parser CompoundStatement
+parseCompoundStatement = do
+    symbol kwBegin
+    lst <- parseStatementList
+    symbol kwEnd
+    return (CompoundStatement lst)
 
 parseIfStatement :: Parser Statement
 parseIfStatement = do 
