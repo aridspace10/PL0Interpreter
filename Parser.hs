@@ -211,6 +211,51 @@ data LValue = LValue Identifier deriving (Show)
 data Identifier = Identifier String deriving (Show)
 data Number = Number String Natural deriving (Show)
 
+parseProgram :: Parser Program
+parseProgram = do
+    b <- parseBlock
+    return (Program b)
+
+parseBlock :: Parser Block
+parseBlock = do
+    decs <- parseDeclerationList
+    cs <- parseCompoundStatement
+    return (Block decs cs)
+
+parseDeclerationList :: Parser DecleratonList
+parseDeclerationList = do
+    decs <- many parseDecleration
+    return (DecleratonList decs)
+
+parseDecleration :: Parser Decleration
+parseDecleration = do
+    c <- parseConstDefList
+    return (DecConstDefList c)
+    <|> do
+    c <- parseTypeDefList
+    return (DecTypeDefList c)
+    <|> do
+    c <- parseVarDeclList
+    return (DecVarDeclList c)
+    <|> do
+    c <- parseProcedureDef
+    return (DecProcedureDef c)
+
+parseConstDefList :: Parser ConstDefList
+parseConstDefList = do
+    symbol kwConst
+    f <- parseConstDef
+    m <- many parseConstDef
+    return (ConstDefList (f : m))
+
+parseConstDef :: Parser ConstDef
+parseConstDef = do
+    id <- identifier
+    symbol equal 
+    const <- parseConstant
+    symbol semicolon
+    return (ConstDef id const)
+
 parseNum :: Parser Number
 parseNum = do
     op <- parseOptionalsString ["-", "+"]
@@ -221,6 +266,13 @@ parseConstant :: Parser Constant
 parseConstant = do 
     num <- parseNum
     return (ConstNumber num)
+    <|> do
+    id <- identifier
+    return (ConstIdentifier id)
+    <|> do
+    op <- parseOptionalsString ["-"]
+    c <- parseConstant
+    return (ConstMinus c)
 
 parseTypeDefList :: Parser TypeDefList
 parseTypeDefList = do
