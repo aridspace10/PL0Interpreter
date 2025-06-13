@@ -143,6 +143,20 @@ data LPAREN = LPAREN String deriving (Show)
 data RPAREN = RPAREN String deriving (Show)
 data ASSIGN = ASSIGN String deriving (Show)
 
+data Program = Program Block
+data Block = Block DecleratonList CompoundStatement
+data DecleratonList = DecleratonList [Decleration]
+data Decleration = 
+    DecConstDefList ConstDefList
+    | DecTypeDefList TypeDefList
+    | DecVarDeclList VarDeclList
+    | DecProcedureDef ProcedureDef
+data ConstDefList = ConstDefList [ConstDef]
+data ConstDef = ConstDef Identifier Constant
+data Constant
+  = ConstNumber Int
+  | ConstIdentifier Identifier
+  | ConstMinus Constant
 data TypeDefList = TypeDefList [TypeDef]
 data TypeDef = TypeDef Identifier Type
 data Type = 
