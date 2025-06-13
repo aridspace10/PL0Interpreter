@@ -4,6 +4,7 @@
 module Parser where
 import           Control.Applicative
 import           GHC.Natural              (Natural)
+import GHC.TypeLits (Nat)
 
 assign = ":=";
 colon = ":";
@@ -154,7 +155,7 @@ data Decleration =
 data ConstDefList = ConstDefList [ConstDef]
 data ConstDef = ConstDef Identifier Constant
 data Constant
-  = ConstNumber Int
+  = ConstNumber Number
   | ConstIdentifier Identifier
   | ConstMinus Constant
 data TypeDefList = TypeDefList [TypeDef]
@@ -208,13 +209,25 @@ data Factor =
 
 data LValue = LValue Identifier deriving (Show)
 data Identifier = Identifier String deriving (Show)
+data Number = Number String Natural deriving (Show)
+
+parseNum :: Parser Number
+parseNum = do
+    op <- parseOptionalsString ["-", "+"]
+    num <- nat
+    return (Number op num)
+
+parseConstant :: Parser Constant 
+parseConstant = do 
+    num <- parseNum
+    return (ConstNumber num)
 
 parseTypeDefList :: Parser TypeDefList
 parseTypeDefList = do
     symbol kwType
     t1 <- parseTypeDef
     t2 <- many parseTypeDef
-    return (TypeDefList t1 : t2)
+    return (TypeDefList (t1 : t2))
 
 parseTypeDef :: Parser TypeDef 
 parseTypeDef = do
@@ -250,7 +263,7 @@ parseVarDeclList = do
     symbol kwVar
     var1 <- parseVarDecl
     var2 <- many parseVarDecl
-    return (VarDeclList var1 : var2)
+    return (VarDeclList (var1 : var2))
 
 
 parseVarDecl :: Parser VarDecl
