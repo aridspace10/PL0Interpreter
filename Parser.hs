@@ -440,8 +440,23 @@ parseTerm = do
 
 parseRelOp :: Parser RelOp
 parseRelOp = do
-    op <- parseOptionalsString ["==", "!=", ">", ">=", "<", "<="]
-    return (RelOp op)
+    symbol "=="
+    return (RelOp "==")
+    <|> do
+    symbol ">"
+    return (RelOp ">")
+    <|> do
+    symbol ">="
+    return (RelOp ">=")
+    <|> do
+    symbol "<"
+    return (RelOp "<")
+    <|> do
+    symbol "<="
+    return (RelOp "<=")
+    <|> do
+    symbol "!="
+    return (RelOp "!=")
 
 parseCondition :: Parser Condition
 parseCondition = do
