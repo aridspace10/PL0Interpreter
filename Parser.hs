@@ -5,6 +5,8 @@ module Parser where
 import           Control.Applicative
 import           GHC.Natural              (Natural)
 import GHC.TypeLits (Nat)
+import FileIO
+import Data.List (filter)
 
 assign = ":=";
 colon = ":";
@@ -144,30 +146,30 @@ data LPAREN = LPAREN String deriving (Show)
 data RPAREN = RPAREN String deriving (Show)
 data ASSIGN = ASSIGN String deriving (Show)
 
-data Program = Program Block
-data Block = Block DecleratonList CompoundStatement
-data DecleratonList = DecleratonList [Decleration]
+data Program = Program Block deriving (Show)
+data Block = Block DecleratonList CompoundStatement deriving (Show)
+data DecleratonList = DecleratonList [Decleration] deriving (Show)
 data Decleration = 
     DecConstDefList ConstDefList
     | DecTypeDefList TypeDefList
     | DecVarDeclList VarDeclList
-    | DecProcedureDef ProcedureDef
-data ConstDefList = ConstDefList [ConstDef]
-data ConstDef = ConstDef Identifier Constant
+    | DecProcedureDef ProcedureDef deriving (Show)
+data ConstDefList = ConstDefList [ConstDef] deriving (Show)
+data ConstDef = ConstDef Identifier Constant deriving (Show)
 data Constant
   = ConstNumber Number
   | ConstIdentifier Identifier
-  | ConstMinus Constant
-data TypeDefList = TypeDefList [TypeDef]
-data TypeDef = TypeDef Identifier Type
+  | ConstMinus Constant deriving (Show)
+data TypeDefList = TypeDefList [TypeDef] deriving (Show)
+data TypeDef = TypeDef Identifier Type deriving (Show)
 data Type = 
     TypeIdentifer Identifier
-    | SubrangeType Constant Constant
-data VarDeclList = VarDeclList [VarDecl]
-data VarDecl = VarDecl Identifier Type
-data ProcedureDef = ProcedureDef ProcedureHead Block
+    | SubrangeType Constant Constant deriving (Show)
+data VarDeclList = VarDeclList [VarDecl] deriving (Show)
+data VarDecl = VarDecl Identifier Type deriving (Show)
+data ProcedureDef = ProcedureDef ProcedureHead Block deriving (Show)
 data ProcedureHead = ProcedureHead Identifier deriving Show
-data CompoundStatement = CompoundStatement StatementList
+data CompoundStatement = CompoundStatement StatementList deriving (Show)
 data StatementList = ComplexStatement Statement StatementList | SimpleStatement Statement deriving Show
 data Statement =
     -- Assignment -> LValue Assign Condition
@@ -499,3 +501,15 @@ isAlpha :: Char -> Bool
 isAlpha c = elem c (['a'..'z'] ++ ['A'..'Z'])
 isAlphaNum :: Char -> Bool
 isAlphaNum c = isAlpha c || elem c ['0'..'9']
+
+removeNewlines :: String -> String
+removeNewlines = map (\c -> if c == '\n' then ' ' else c)
+
+parseFile :: FilePath -> IO ()
+parseFile path = do
+  res <- readFileContents path
+  case res of
+    Left err -> putStrLn ("Error reading file: " ++ err)
+    Right content -> do
+        let result = removeNewlines content
+        print (parse parseProgram result)
