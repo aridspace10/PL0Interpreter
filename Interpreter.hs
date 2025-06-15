@@ -40,6 +40,19 @@ evalStatement (WhileStatement cond stat) = do
         evalStatement (WhileStatement cond stat))
     else return ())
 
+evalCondition :: Condition -> Interpreter Value
+evalCondition (SimpleCondition exp) = evalExp exp
+
+evalExp :: Exp -> Interpreter Value
+evalExp (SingleExp str term) = do
+    eterm <- evalTerm term
+    if str == "+" 
+    then return eterm
+    else return $ eterm * (-1)
+
+evalTerm :: Term -> Interpreter Value
+evalTerm (SingleFactor fact) = evalFactor fact
+
 evalFactor :: Factor -> Interpreter Value
 evalFactor (FactorLValue lval) = evalLValue lval
 evalFactor (FactorNumber num) = return (IntVal num)
