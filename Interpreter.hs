@@ -32,10 +32,10 @@ evalStatement (WriteStatement exp) = do
     val <- evalExp exp
     liftIO $ print val
 evalStatement (IfStatement cond stat1 stat2) = do
-    r <- evalCondition
+    (BoolVal r) <- evalCondition cond
     if r then evalStatement stat1 else evalStatement stat2
 evalStatement (WhileStatement cond stat) = do
-    r <- evalCondition
+    (BoolVal r) <- evalCondition cond
     (if r then (do
         evalStatement stat
         evalStatement (WhileStatement cond stat))
