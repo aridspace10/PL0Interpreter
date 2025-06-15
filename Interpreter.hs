@@ -75,7 +75,10 @@ evalExp (BinaryExp str term exp) = do
     eval <- evalTerm term
     eexp <- evalExp exp
     case (eval, eexp) of
-        (IntVal left, IntVal right) -> return (IntVal $ left + right)
+        (IntVal left, IntVal right) -> do
+            if str == "+"
+            then return (IntVal $ left + right)
+            else return (IntVal $ (left * (-1)) + right)
 
 
 evalTerm :: Term -> Interpreter Value
