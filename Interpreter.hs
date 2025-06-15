@@ -43,14 +43,16 @@ evalStatement (WhileStatement cond stat) = do
 evalFactor :: Factor -> Interpreter Value
 evalFactor (FactorLValue lval) = evalLValue lval
 evalFactor (FactorNumber num) = return (IntVal num)
-evalFactor (FactorParen cond) = evalCondition cond
-
-evalLValue :: LValue -> Interpreter Value
-evalLValue (LValue x) = evalIdentifier x
+evalFactor (FactorParen cond) = do
+    b <- evalCondition cond
+    return (BoolVal b)
 
 evalIdentifier :: Identifier -> Interpreter Value
-evalIdentifier (Identifier name) = do
-    lookupVar name
+evalIdentifier (Identifier name) = lookupVar name
+
+-- Eval lvalues
+evalLValue :: LValue -> Interpreter Value
+evalLValue (LValue x) = evalIdentifier x
 
 testEnv :: Env
 testEnv = Map.fromList [("x", IntVal 5), ("y", BoolVal True)]
