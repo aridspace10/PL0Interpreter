@@ -7,6 +7,7 @@ import Control.Monad.State
 import Control.Monad.Except
 import qualified Data.Map as Map
 import Control.Monad.Trans.Accum (look)
+import Foreign.C (throwErrno)
 
 type Env = Map.Map String Value
 
@@ -63,20 +64,27 @@ evalCondition (RelationalCondition lexp (RelOp op) rexp) = do
 
 evalExp :: Exp -> Interpreter Value
 evalExp (SingleExp str term) = do
-    eterm <- evalTerm term
-    if str == "+" 
-    then return eterm
-    else return $ eterm * (-1)
+    val <- evalTerm term
+    case (val) of
+        (IntVal e) -> do
+            if str == "+" 
+            then return (IntVal e)
+            else return $ IntVal (e * (-1))
+        (BoolVal e) -> throwError ("Big Bad Moment No.1")
+evalExp (BinaryExp str term exp) = do
+    eval <- evalTerm term
+    eexp <- evalExp exp
+    case (eval, eexp) of
+        (IntVal left, IntVal right) -> return (IntVal $ left + right)
+
 
 evalTerm :: Term -> Interpreter Value
 evalTerm (SingleFactor fact) = evalFactor fact
 
 evalFactor :: Factor -> Interpreter Value
 evalFactor (FactorLValue lval) = evalLValue lval
-evalFactor (FactorNumber num) = return (IntVal num)
-evalFactor (FactorParen cond) = do
-    b <- evalCondition cond
-    return (BoolVal b)
+evalFactor (FactorNumber num) = return (IntVal $ fromIntegral num)
+evalFactor (FactorParen cond) = do evalCondition cond
 
 evalIdentifier :: Identifier -> Interpreter Value
 evalIdentifier (Identifier name) = lookupVar name
