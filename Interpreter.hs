@@ -1,5 +1,6 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use when" #-}
+{-# HLINT ignore "Redundant bracket" #-}
 module Interpreter where
 import Parser
 import Control.Monad.State
@@ -42,6 +43,23 @@ evalStatement (WhileStatement cond stat) = do
 
 evalCondition :: Condition -> Interpreter Value
 evalCondition (SimpleCondition exp) = evalExp exp
+evalCondition (RelationalCondition lexp (RelOp op) rexp) = do
+  elexp <- evalExp lexp
+  erexp <- evalExp rexp
+  case (elexp, erexp) of
+    (IntVal l, IntVal r) -> case op of
+      ">"  -> return $ BoolVal (l > r)
+      ">=" -> return $ BoolVal (l >= r)
+      "<"  -> return $ BoolVal (l < r)
+      "<=" -> return $ BoolVal (l <= r)
+      "!=" -> return $ BoolVal (l /= r)
+      "==" -> return $ BoolVal (l == r)
+      _    -> throwError ("Unknown relational operator: " ++ op)
+    (BoolVal l, BoolVal r) -> case op of
+      "==" -> return $ BoolVal (l == r)
+      "!=" -> return $ BoolVal (l /= r)
+      _    -> throwError ("Unsupported operator for boolean values: " ++ op)
+    _ -> throwError "Type error in relational condition"
 
 evalExp :: Exp -> Interpreter Value
 evalExp (SingleExp str term) = do
