@@ -33,3 +33,19 @@ checkStatementList (SimpleStatement stat) = do
 checkStatementList (ComplexStatement stat statLst) = do
     checkStatement stat
     checkStatementList statLst
+
+checkStatement :: Statement -> Either String [Error]
+checkStatement (Assignment lval cond) = do
+    checkLValue lval
+    checkCondition cond 
+checkStatement (IfStatement cond stat1 stat2) = do
+    checkCondition cond
+    checkStatement stat1
+    checkStatement stat2
+checkStatement (WriteStatement exp) = do
+    checkExp exp
+checkStatement (ReadStatement lval) = do
+    checkLValue lval
+checkStatement (WhileStatement cond stat) = do
+    checkCondition cond
+    checkStatement stat
