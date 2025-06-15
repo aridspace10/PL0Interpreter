@@ -19,4 +19,17 @@ checkProgram (Program code) = do
     checkBlock code
 
 checkBlock :: Block -> Either String [Error]
-checkBlock = undefined
+checkBlock (Block decList compStat) = do
+    -- No static checking for decList
+    checkCompoundStatement compStat
+
+checkCompoundStatement :: CompoundStatement -> Either String [Error]
+checkCompoundStatement (CompoundStatement statlst) = do
+    checkStatementList statlst
+
+checkStatementList :: StatementList -> Either String [Error]
+checkStatementList (SimpleStatement stat) = do
+    checkStatement stat
+checkStatementList (ComplexStatement stat statLst) = do
+    checkStatement stat
+    checkStatementList statLst
