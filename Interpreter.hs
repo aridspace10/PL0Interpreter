@@ -14,7 +14,7 @@ type Env = Map.Map String Value
 data Value = IntVal Int | BoolVal Bool
   deriving (Show, Eq)
 
-type Interpreter a = StateT Env (Except String) a
+type Interpreter a = StateT Env (ExceptT String IO) a
 
 lookupVar :: String -> Interpreter Value
 lookupVar name = do
@@ -33,14 +33,19 @@ evalStatement (WriteStatement exp) = do
     val <- evalExp exp
     liftIO $ print val
 evalStatement (IfStatement cond stat1 stat2) = do
-    (BoolVal r) <- evalCondition cond
-    if r then evalStatement stat1 else evalStatement stat2
+    val <- evalCondition cond
+    case (val) of
+        (BoolVal r) -> if r then evalStatement stat1 else evalStatement stat2
+        _ -> throwError ("Big Boy Problem")
 evalStatement (WhileStatement cond stat) = do
-    (BoolVal r) <- evalCondition cond
-    (if r then (do
-        evalStatement stat
-        evalStatement (WhileStatement cond stat))
-    else return ())
+    val <- evalCondition cond
+    case (val) of
+        (BoolVal r) -> do
+            if r then (do 
+                    evalStatement stat
+                    evalStatement (WhileStatement cond stat))
+            else return ()
+        _ -> throwError ("Big Boy Problem")
 
 evalCondition :: Condition -> Interpreter Value
 evalCondition (SimpleCondition exp) = evalExp exp
