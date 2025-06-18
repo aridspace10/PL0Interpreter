@@ -44,6 +44,7 @@ evalBlock (Block decs cmpStmt) = do
     evalCompoundStatement cmpStmt
 
 evalDeclarationList :: DecleratonList -> Interpreter ()
+evalDeclarationList (DecleratonList []) = return ()
 evalDeclarationList (DecleratonList (dec:decs)) = do
     evalDeclaration dec
     evalDeclarationList (DecleratonList decs)
@@ -53,6 +54,7 @@ evalDeclaration (DecConstDefList cdf) = evalConstDefList cdf
 evalDeclaration (DecVarDeclList vdf) = evalVarDecList vdf
 
 evalConstDefList :: ConstDefList -> Interpreter ()
+evalConstDefList (ConstDefList []) = return ()
 evalConstDefList (ConstDefList (cd:cds)) = do
     evalConstDef cd
     evalConstDefList (ConstDefList cds)
@@ -63,6 +65,7 @@ evalConstDef (ConstDef (Identifier id) val) = do
     assignVar id eval
 
 evalVarDecList :: VarDeclList -> Interpreter ()
+evalVarDecList (VarDeclList []) = return ()
 evalVarDecList (VarDeclList (vd:vds)) = do
     evalVarDec vd
     evalVarDecList (VarDeclList vds)
