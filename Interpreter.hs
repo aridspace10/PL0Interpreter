@@ -8,6 +8,7 @@ import Control.Monad.Except
 import qualified Data.Map as Map
 import Control.Monad.Trans.Accum (look)
 import Foreign.C (throwErrno)
+import Distribution.Utils.ShortText (decodeStringUtf8)
 
 type Env = Map.Map String Value
 
@@ -28,6 +29,20 @@ assignVar :: String -> Value -> Interpreter ()
 assignVar name val = do
     env <- get
     put (Map.insert name val env)
+
+evalProgram :: Program -> Interpreter ()
+evalProgram (Program blk) = do
+    evalBlock blk
+
+evalBlock :: Block -> Interpreter ()
+evalBlock (Block decs cmpStmt) = do
+    evalDeclarationList decs 
+    evalCompoundStatement cmpStmt
+
+evalDeclarationList :: DecleratonList -> Interpreter ()
+
+evalCompoundStatement :: CompoundStatement -> Interpreter ()
+
 
 evalStatement :: Statement -> Interpreter ()
 evalStatement (WriteStatement exp) = do
