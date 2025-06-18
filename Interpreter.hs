@@ -30,6 +30,8 @@ assignVar name val = do
     env <- get
     put (Map.insert name val env)
 
+evalConstant :: Constant -> Interpreter ()
+
 evalProgram :: Program -> Interpreter ()
 evalProgram (Program blk) = do
     evalBlock blk
@@ -40,9 +42,26 @@ evalBlock (Block decs cmpStmt) = do
     evalCompoundStatement cmpStmt
 
 evalDeclarationList :: DecleratonList -> Interpreter ()
+evalDeclarationList (DecleratonList dec:decs) = do
+    evalDeclaration dec
+    evalDeclarationList decs
+
+evalDeclaration :: Decleration -> Interpreter ()
+evalDeclaration (DecConstDefList cdf) = evalConstDefList cdf
+
+evalConstDefList :: ConstDefList -> Interpreter ()
+evalConstDefList (ConstDefList (cd:cds)) = do
+    evalConstDef cd
+    evalConstDefList (ConstDefList cds)
+
+evalConstDef :: ConstDef -> Interpreter ()
+evalConstDef (ConstDef id val) = do
+    eid <- evalIdentifier id
+    eval <- evalConstant
+    assignVar (eid) (IntVal eval)
 
 evalCompoundStatement :: CompoundStatement -> Interpreter ()
-
+evalCompoundStatement = undefined
 
 evalStatement :: Statement -> Interpreter ()
 evalStatement (WriteStatement exp) = do
