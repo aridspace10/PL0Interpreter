@@ -6,9 +6,6 @@ import Parser
 import Control.Monad.State
 import Control.Monad.Except
 import qualified Data.Map as Map
-import Control.Monad.Trans.Accum (look)
-import Foreign.C (throwErrno)
-import Distribution.Utils.ShortText (decodeStringUtf8)
 
 type Env = Map.Map String Value
 
@@ -32,8 +29,9 @@ assignVar name val = do
 
 evalConstant :: Constant -> Interpreter Value
 evalConstant (ConstNumber (Number op val)) = do
-    eval <- fromIntegral val
+    let eval = fromIntegral val
     if op == "-" then return (IntVal $ Just (-eval)) else return (IntVal $ Just eval)
+evalConstant (ConstIdentifier id) = evalIdentifier id
 
 evalProgram :: Program -> Interpreter ()
 evalProgram (Program blk) = do
@@ -51,6 +49,7 @@ evalDeclarationList (DecleratonList (dec:decs)) = do
 
 evalDeclaration :: Decleration -> Interpreter ()
 evalDeclaration (DecConstDefList cdf) = evalConstDefList cdf
+evalDeclaration (DecVarDeclList vdf) = evalVarDecList vdf
 
 evalConstDefList :: ConstDefList -> Interpreter ()
 evalConstDefList (ConstDefList (cd:cds)) = do
@@ -58,10 +57,22 @@ evalConstDefList (ConstDefList (cd:cds)) = do
     evalConstDefList (ConstDefList cds)
 
 evalConstDef :: ConstDef -> Interpreter ()
-evalConstDef (ConstDef id val) = do
-    eid <- evalIdentifier id
-    eval <- evalConstant
-    assignVar (eid) eval
+evalConstDef (ConstDef (Identifier id) val) = do
+    eval <- evalConstant val
+    assignVar id eval
+
+evalVarDecList :: VarDeclList -> Interpreter ()
+evalVarDecList (VarDeclList (vd:vds)) = do
+    evalVarDec vd
+    evalVarDecList (VarDeclList vds)
+
+evalVarDec :: VarDecl -> Interpreter ()
+evalVarDec (VarDecl (Identifier id) (TypeIdentifer (Identifier ty))) = do
+    if id == "int" 
+    then assignVar id (Uninitialized $ IntVal Nothing) 
+    else if id == "bool"
+    then assignVar id (Uninitialized $ BoolVal Nothing)
+    else throwError "Unknown Type"
 
 evalCompoundStatement :: CompoundStatement -> Interpreter ()
 evalCompoundStatement = undefined
