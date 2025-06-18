@@ -11,7 +11,7 @@ import Foreign.C (throwErrno)
 
 type Env = Map.Map String Value
 
-data Value = IntVal (Maybe Int) | BoolVal (Maybe Bool)
+data Value = IntVal (Maybe Int) | BoolVal (Maybe Bool) | Uninitialized Value
   deriving (Show, Eq)
 
 type Interpreter a = StateT Env (ExceptT String IO) a
@@ -20,6 +20,7 @@ lookupVar :: String -> Interpreter Value
 lookupVar name = do
     env <- get
     case Map.lookup name env of
+        Just (Uninitialized val) -> throwError ("Variable '" ++ name ++ "' is uninitialized")
         Just val -> return val
         Nothing  -> throwError ("Undefined variable: " ++ name)
 
@@ -111,4 +112,7 @@ evalLValue :: LValue -> Interpreter Value
 evalLValue (LValue x) = evalIdentifier x
 
 testEnv :: Env
-testEnv = Map.fromList [("x", IntVal $ Just 5), ("y", BoolVal $ Just True)]
+testEnv = Map.fromList [("x", IntVal $ Just 5), ("y", BoolVal $ Just True), ("z", Uninitialized (IntVal $ Nothing))]
+
+runInterpreter :: Interpreter a -> Env -> IO (Either String (a, Env))
+runInterpreter action env = runExceptT (runStateT action env)
