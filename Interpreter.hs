@@ -3,6 +3,7 @@
 {-# HLINT ignore "Redundant bracket" #-}
 module Interpreter where
 import Parser
+import FileIO
 import Control.Monad.State
 import Control.Monad.Except
 import qualified Data.Map as Map
@@ -68,11 +69,11 @@ evalVarDecList (VarDeclList (vd:vds)) = do
 
 evalVarDec :: VarDecl -> Interpreter ()
 evalVarDec (VarDecl (Identifier id) (TypeIdentifer (Identifier ty))) = do
-    if id == "int" 
+    if ty == "int" 
     then assignVar id (Uninitialized $ IntVal Nothing) 
-    else if id == "bool"
+    else if ty == "bool"
     then assignVar id (Uninitialized $ BoolVal Nothing)
-    else throwError "Unknown Type"
+    else throwError ("Unknown Type ")
 
 evalCompoundStatement :: CompoundStatement -> Interpreter ()
 evalCompoundStatement (CompoundStatement stmtList) = evalStatementList stmtList
@@ -107,6 +108,9 @@ evalStatement (WhileStatement cond stat) = do
                     else return ()
                 _ -> return ()
         _ -> throwError ("Big Boy Problem")
+evalStatement (Assignment (LValue (Identifier id)) cond) = do
+    econd <- evalCondition cond 
+    assignVar id econd
 
 evalCondition :: Condition -> Interpreter Value
 evalCondition (SimpleCondition exp) = evalExp exp
@@ -168,5 +172,23 @@ evalLValue (LValue x) = evalIdentifier x
 testEnv :: Env
 testEnv = Map.fromList [("x", IntVal $ Just 5), ("y", BoolVal $ Just True), ("z", Uninitialized (IntVal $ Nothing))]
 
+emptyEnv :: Env
+emptyEnv = Map.empty
+
 runInterpreter :: Interpreter a -> Env -> IO (Either String (a, Env))
 runInterpreter action env = runExceptT (runStateT action env)
+
+run :: FilePath -> IO ()
+run path = do
+  res <- readFileContents path
+  case res of
+    Left err -> putStrLn ("Error reading file: " ++ err)
+    Right content -> do
+        let result = removeNewlines content
+        case parse parseProgram result of
+            Nothing -> putStrLn "Parse error."
+            Just (program, _) -> do
+                result <- runInterpreter (evalProgram program) emptyEnv
+                case result of
+                    Left err -> putStrLn ("Runtime error: " ++ err)
+                    Right (_, env) -> print env
