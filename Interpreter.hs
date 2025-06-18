@@ -75,7 +75,13 @@ evalVarDec (VarDecl (Identifier id) (TypeIdentifer (Identifier ty))) = do
     else throwError "Unknown Type"
 
 evalCompoundStatement :: CompoundStatement -> Interpreter ()
-evalCompoundStatement = undefined
+evalCompoundStatement (CompoundStatement stmtList) = evalStatementList stmtList
+
+evalStatementList :: StatementList -> Interpreter ()
+evalStatementList (ComplexStatement stmt stmtList) = do
+    evalStatement stmt
+    evalStatementList stmtList
+evalStatementList (SimpleStatement stmt) = evalStatement stmt
 
 evalStatement :: Statement -> Interpreter ()
 evalStatement (WriteStatement exp) = do
