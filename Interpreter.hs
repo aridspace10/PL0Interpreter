@@ -90,7 +90,9 @@ evalStatementList (SimpleStatement stmt) = evalStatement stmt
 evalStatement :: Statement -> Interpreter ()
 evalStatement (WriteStatement exp) = do
     val <- evalExp exp
-    liftIO $ print val
+    case (val) of
+        (IntVal (Just v)) -> liftIO $ print v
+        (BoolVal (Just v)) -> liftIO $ print v
 evalStatement (IfStatement cond stat1 stat2) = do
     val <- evalCondition cond
     case (val) of
