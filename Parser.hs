@@ -418,23 +418,35 @@ parseStatementList = do
     stat <- parseStatement 
     return (SimpleStatement stat)
 
+parseOptional :: [String] -> Parser String
+parseOptional ([]) = return ""
+parseOptional (str:strs) = do
+    symbol str
+    return str
+    <|> parseOptional strs
+
 parseExp :: Parser Exp
 parseExp = do
-    op <- parseOptionalsString ["+", "-"]
+    op <- parseOptional ["+", "-"]
     term <- parseTerm
     ex <- parseExp
     return (BinaryExp op term ex)
     <|> do
-    op <- parseOptionalsString ["+", "-"]
+    op <- parseOptional ["+", "-"]
     term <- parseTerm
     return (SingleExp op term)
 
 parseTerm :: Parser Term
 parseTerm = do
     f <- parseFactor
-    op <- parseOptionalsString ["*", "/"]
+    symbol "*"
     t <- parseTerm
-    return (BinaryTerm f op t)
+    return (BinaryTerm f "*" t)
+    <|> do
+    f <- parseFactor
+    symbol "/"
+    t <- parseTerm
+    return (BinaryTerm f "/" t)
     <|> do
     f <- parseFactor
     return (SingleFactor f)
