@@ -14,27 +14,27 @@ data Error = Error Natural String
 
 type StaticChecker a = StateT Scope (Except String) a
 
-checkProgram :: Program -> Either String [Error]
+checkProgram :: Program -> StaticChecker ()
 checkProgram (Program code) = do 
     checkBlock code
 
-checkBlock :: Block -> Either String [Error]
+checkBlock :: Block -> StaticChecker ()
 checkBlock (Block decList compStat) = do
     -- No static checking for decList
     checkCompoundStatement compStat
 
-checkCompoundStatement :: CompoundStatement -> Either String [Error]
+checkCompoundStatement :: CompoundStatement -> StaticChecker ()
 checkCompoundStatement (CompoundStatement statlst) = do
     checkStatementList statlst
 
-checkStatementList :: StatementList -> Either String [Error]
+checkStatementList :: StatementList -> StaticChecker ()
 checkStatementList (SimpleStatement stat) = do
     checkStatement stat
 checkStatementList (ComplexStatement stat statLst) = do
     checkStatement stat
     checkStatementList statLst
 
-checkStatement :: Statement -> Either String [Error]
+checkStatement :: Statement -> StaticChecker ()
 checkStatement (Assignment lval cond) = do
     checkLValue lval
     checkCondition cond 
@@ -49,3 +49,12 @@ checkStatement (ReadStatement lval) = do
 checkStatement (WhileStatement cond stat) = do
     checkCondition cond
     checkStatement stat
+
+checkLValue :: LValue -> StaticChecker ()
+checkLValue = undefined
+
+checkCondition :: Condition -> StaticChecker ()
+checkCondition = undefined
+
+checkExp :: Exp -> StaticChecker ()
+checkExp = undefined
