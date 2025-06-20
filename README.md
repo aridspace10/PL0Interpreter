@@ -1,5 +1,5 @@
 Current Grammer
-Program → Block EOF
+Program → Block EOF \n
 Block → {Declaration} CompoundStatement
 Declaration → ConstDefList | TypeDefList | VarDeclList | ProcedureDef
 ConstDefList → KW CONST ConstDef {ConstDef }
