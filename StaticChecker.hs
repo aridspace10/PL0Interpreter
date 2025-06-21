@@ -9,10 +9,15 @@ import GHC.Natural
 -- Scope = SymTable Errors ParentScope
 data Scope = Scope SymTable [Error] Scope
 
-type SymTable = Map.Map String Type
+type SymTable = Map.Map String VarType
 data Error = Error Natural String
 
 type StaticChecker a = StateT Scope (Except String) a
+
+assignVar :: String -> VarType -> StaticChecker ()
+assignVar name val = do
+    env <- get
+    put (Map.insert name val env)
 
 checkProgram :: Program -> StaticChecker ()
 checkProgram (Program code) = do 
@@ -20,8 +25,22 @@ checkProgram (Program code) = do
 
 checkBlock :: Block -> StaticChecker ()
 checkBlock (Block decList compStat) = do
-    -- No static checking for decList
+    checkDecList decList
     checkCompoundStatement compStat
+
+checkDecList :: DecleratonList -> StaticChecker ()
+checkDecList (DecleratonList []) = return ()
+checkDecList (DecleratonList (dec:decs)) = do
+    checkDecleraton dec
+    checkDecList (DecleratonList decs)
+
+checkDecleraton (DecConstDefList (ConstDefList cdf)) = checkConstDef cdf 
+
+checkConstDef :: [ConstDef] -> StaticChecker ()
+checkConstDef [] = return ()
+checkConstDef (cd:cds) = do
+
+    checkConstDef cds
 
 checkCompoundStatement :: CompoundStatement -> StaticChecker ()
 checkCompoundStatement (CompoundStatement statlst) = do

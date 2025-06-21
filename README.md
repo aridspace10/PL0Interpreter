@@ -1,4 +1,5 @@
 Current Grammer
+
 Program → Block EOF
 
 Block → {Declaration} CompoundStatement
