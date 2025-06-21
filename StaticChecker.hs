@@ -6,18 +6,24 @@ import qualified Data.Map as Map
 import Control.Monad.Trans.Accum (look)
 import GHC.Natural
 
--- Scope = SymTable Errors ParentScope
 data Scope = Scope SymTable [Error] Scope
-
-type SymTable = Map.Map String VarType
+type SymTable = Map.Map String AssignedType
 data Error = Error Natural String
-
+data AssignedType = IntType | BoolType
 type StaticChecker a = StateT Scope (Except String) a
 
-assignVar :: String -> VarType -> StaticChecker ()
+-- assignVar function
+assignVar :: String -> AssignedType -> StaticChecker ()
 assignVar name val = do
-    env <- get
-    put (Map.insert name val env)
+    Scope symTable errors parent <- get
+    let newSymTable = Map.insert name val symTable
+    put (Scope newSymTable errors parent)
+
+addError :: Error -> StaticChecker ()
+addError err = do
+    Scope symTable errors parent <- get
+    let newErrors = errors ++ [err]
+    put (Scope symTable newErrors parent)
 
 checkProgram :: Program -> StaticChecker ()
 checkProgram (Program code) = do 
