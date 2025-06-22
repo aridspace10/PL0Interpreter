@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-overlapping-patterns #-}
 module StaticChecker where
 import Parser
 import Control.Monad.State
@@ -25,6 +26,14 @@ addError err = do
     let newErrors = errors ++ [err]
     put (Scope symTable newErrors parent)
 
+lookup :: String -> StaticChecker AssignedType
+lookup id = do
+    Scope symTable errors parent <- get
+    case Map.lookup id symTable of
+        Just IntType -> IntType
+        Just BoolType -> BoolType
+        nothing -> throwError ("Undefined error " ++ id)
+
 checkProgram :: Program -> StaticChecker ()
 checkProgram (Program code) = do
     checkBlock code
@@ -50,7 +59,7 @@ checkConstDef ((ConstDef (Identifier id) const):cds) = do
             case (const) of
                 (ConstNumber (Number op num)) -> assignVar id IntType
                 (ConstIdentifier (Identifier otherid)) -> lookup otherid
-        _ -> addError (Error 0 "Reassignment of " ++ id)
+        _ -> addError (Error 0 ("Reassignment of " ++ id))
     checkConstDef cds
 
 checkCompoundStatement :: CompoundStatement -> StaticChecker ()
