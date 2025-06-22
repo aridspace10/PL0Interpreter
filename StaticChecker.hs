@@ -26,7 +26,7 @@ addError err = do
     put (Scope symTable newErrors parent)
 
 checkProgram :: Program -> StaticChecker ()
-checkProgram (Program code) = do 
+checkProgram (Program code) = do
     checkBlock code
 
 checkBlock :: Block -> StaticChecker ()
@@ -40,15 +40,15 @@ checkDecList (DecleratonList (dec:decs)) = do
     checkDecleraton dec
     checkDecList (DecleratonList decs)
 
-checkDecleraton (DecConstDefList (ConstDefList cdf)) = checkConstDef cdf 
+checkDecleraton (DecConstDefList (ConstDefList cdf)) = checkConstDef cdf
 
 checkConstDef :: [ConstDef] -> StaticChecker ()
 checkConstDef [] = return ()
 checkConstDef ((ConstDef (Identifier id) const):cds) = do
     case (lookup id) of
-        (Nothing) -> do
+        nothing -> do
             case (const) of
-                (ConstNumber (Number op num)) -> if op == "-" then assignVar id (-num) else assignVar id num
+                (ConstNumber (Number op num)) -> assignVar id IntType
                 (ConstIdentifier (Identifier otherid)) -> lookup otherid
         _ -> addError (Error 0 "Reassignment of " ++ id)
     checkConstDef cds
@@ -67,7 +67,7 @@ checkStatementList (ComplexStatement stat statLst) = do
 checkStatement :: Statement -> StaticChecker ()
 checkStatement (Assignment lval cond) = do
     checkLValue lval
-    checkCondition cond 
+    checkCondition cond
 checkStatement (IfStatement cond stat1 stat2) = do
     checkCondition cond
     checkStatement stat1
