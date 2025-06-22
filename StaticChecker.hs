@@ -49,6 +49,7 @@ checkDecList (DecleratonList (dec:decs)) = do
     checkDecList (DecleratonList decs)
 
 checkDecleraton (DecConstDefList (ConstDefList cdf)) = checkConstDef cdf
+checkDecleraton (DecVarDeclList (VarDeclList vdf)) = checkVarDef vdf
 
 checkConstDef :: [ConstDef] -> StaticChecker ()
 checkConstDef [] = return ()
@@ -62,6 +63,17 @@ checkConstDef ((ConstDef (Identifier id) const):cds) = do
                     assignVar id ty
         _ -> addError (Error 0 ("Reassignment of " ++ id))
     checkConstDef cds
+
+checkVarDef :: [VarDecl] -> StaticChecker ()
+checkVarDef ((VarDecl (Identifier id) ty):vds) = do
+    case ty of
+        (TypeIdentifer tid) -> do
+            case tid of
+                (Identifier tid') -> do
+                    case tid' of
+                        "int" -> assignVar id IntType
+                        "bool" -> assignVar id BoolType
+    checkVarDef vds
 
 checkCompoundStatement :: CompoundStatement -> StaticChecker ()
 checkCompoundStatement (CompoundStatement statlst) = do
