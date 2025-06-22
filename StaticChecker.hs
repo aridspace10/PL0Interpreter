@@ -26,12 +26,12 @@ addError err = do
     let newErrors = errors ++ [err]
     put (Scope symTable newErrors parent)
 
-lookup :: String -> StaticChecker AssignedType
-lookup id = do
+lookupType :: String -> StaticChecker AssignedType
+lookupType id = do
     Scope symTable errors parent <- get
     case Map.lookup id symTable of
-        Just IntType -> IntType
-        Just BoolType -> BoolType
+        Just IntType -> return IntType
+        Just BoolType -> return BoolType
         nothing -> throwError ("Undefined error " ++ id)
 
 checkProgram :: Program -> StaticChecker ()
@@ -58,7 +58,9 @@ checkConstDef ((ConstDef (Identifier id) const):cds) = do
         nothing -> do
             case (const) of
                 (ConstNumber (Number op num)) -> assignVar id IntType
-                (ConstIdentifier (Identifier otherid)) -> lookup otherid
+                (ConstIdentifier (Identifier otherid)) -> do
+                    ty <- lookupType otherid
+                    assignVar id ty
         _ -> addError (Error 0 ("Reassignment of " ++ id))
     checkConstDef cds
 
