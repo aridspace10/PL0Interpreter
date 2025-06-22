@@ -44,8 +44,13 @@ checkDecleraton (DecConstDefList (ConstDefList cdf)) = checkConstDef cdf
 
 checkConstDef :: [ConstDef] -> StaticChecker ()
 checkConstDef [] = return ()
-checkConstDef (cd:cds) = do
-
+checkConstDef ((ConstDef (Identifier id) const):cds) = do
+    case (lookup id) of
+        (Nothing) -> do
+            case (const) of
+                (ConstNumber (Number op num)) -> if op == "-" then assignVar id (-num) else assignVar id num
+                (ConstIdentifier (Identifier otherid)) -> lookup otherid
+        _ -> addError (Error 0 "Reassignment of " ++ id)
     checkConstDef cds
 
 checkCompoundStatement :: CompoundStatement -> StaticChecker ()
