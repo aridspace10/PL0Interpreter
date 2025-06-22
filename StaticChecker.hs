@@ -4,7 +4,6 @@ import Parser
 import Control.Monad.State
 import Control.Monad.Except
 import qualified Data.Map as Map
-import Control.Monad.Trans.Accum (look)
 import GHC.Natural
 
 data Scope = Scope SymTable [Error] Scope
@@ -54,9 +53,9 @@ checkDecleraton (DecConstDefList (ConstDefList cdf)) = checkConstDef cdf
 checkConstDef :: [ConstDef] -> StaticChecker ()
 checkConstDef [] = return ()
 checkConstDef ((ConstDef (Identifier id) const):cds) = do
-    case (lookup id) of
+    case lookup id of
         nothing -> do
-            case (const) of
+            case const of
                 (ConstNumber (Number op num)) -> assignVar id IntType
                 (ConstIdentifier (Identifier otherid)) -> do
                     ty <- lookupType otherid
