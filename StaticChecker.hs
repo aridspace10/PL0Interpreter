@@ -90,6 +90,14 @@ checkStatement :: Statement -> StaticChecker ()
 checkStatement (Assignment lval cond) = do
     checkLValue lval
     checkCondition cond
+    case (lval) of
+        (LValue (Identifier id)) -> do
+            left <- lookupType id
+            right <- getConditionType cond
+            if left == right
+            then return ()
+            else throwError "Cannot Assign"
+        _ -> throwError "IDK how"
 checkStatement (IfStatement cond stat1 stat2) = do
     checkCondition cond
     checkStatement stat1

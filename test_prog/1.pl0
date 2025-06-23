@@ -1,7 +1,9 @@
 var x: int;
     y: int;
+    z: bool;
 begin
   x := -100;
+  z := x > 0;
   if x < 0 then y := -x else y := x;
   write y
 end
