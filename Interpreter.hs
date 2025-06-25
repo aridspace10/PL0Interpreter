@@ -14,7 +14,7 @@ type ProcEnv = Map.Map String Procedure
 data Env = Env {
   varEnv  :: VarEnv,
   procEnv :: ProcEnv
-}
+} deriving (Show)
 
 data Procedure = Procedure {
   procName   :: String,
@@ -43,6 +43,13 @@ assignVar name val = do
     Just _  -> do
       let newVarEnv = Map.insert name (val) (varEnv env)
       put env { varEnv = newVarEnv }
+
+lookupProc :: String -> Interpreter Procedure
+lookupProc name = do
+  env <- get
+  case Map.lookup name (procEnv env) of
+    Nothing -> throwError $ "Undefined procedure: " ++ name
+    Just p  -> return p
 
 evalConstant :: Constant -> Interpreter Value
 evalConstant (ConstNumber (Number op val)) = do
@@ -153,6 +160,9 @@ evalStatement (WhileStatement cond stat) = do
 evalStatement (Assignment (LValue (Identifier id)) cond) = do
     econd <- evalCondition cond 
     assignVar id econd
+evalStatement (CallStatement (Identifier id)) = do
+    pro <- lookupProc id
+    evalBlock (body pro)
 
 evalCondition :: Condition -> Interpreter Value
 evalCondition (SimpleCondition exp) = evalExp exp
@@ -211,11 +221,11 @@ evalIdentifier (Identifier name) = lookupVar name
 evalLValue :: LValue -> Interpreter Value
 evalLValue (LValue x) = evalIdentifier x
 
-testEnv :: Env
-testEnv = Map.fromList [("x", IntVal $ Just 5), ("y", BoolVal $ Just True), ("z", Uninitialized (IntVal $ Nothing))]
-
 emptyEnv :: Env
-emptyEnv = Map.empty
+emptyEnv = Env {
+  varEnv = Map.empty,
+  procEnv = Map.empty
+}
 
 runInterpreter :: Interpreter a -> Env -> IO (Either String (a, Env))
 runInterpreter action env = runExceptT (runStateT action env)
