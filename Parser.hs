@@ -147,9 +147,9 @@ data RPAREN = RPAREN String deriving (Show)
 data ASSIGN = ASSIGN String deriving (Show)
 
 data Program = Program Block deriving (Show)
-data Block = Block DecleratonList CompoundStatement deriving (Show)
+data Block = Block DecleratonList Statement deriving (Show)
 data DecleratonList = DecleratonList [Decleration] deriving (Show)
-data Decleration = 
+data Decleration =
     DecConstDefList ConstDefList
     | DecTypeDefList TypeDefList
     | DecVarDeclList VarDeclList
@@ -162,14 +162,13 @@ data Constant
   | ConstMinus Constant deriving (Show)
 data TypeDefList = TypeDefList [TypeDef] deriving (Show)
 data TypeDef = TypeDef Identifier Type deriving (Show)
-data Type = 
+data Type =
     TypeIdentifer Identifier
     | SubrangeType Constant Constant deriving (Show)
 data VarDeclList = VarDeclList [VarDecl] deriving (Show)
 data VarDecl = VarDecl Identifier Type deriving (Show)
 data ProcedureDef = ProcedureDef ProcedureHead Block deriving (Show)
 data ProcedureHead = ProcedureHead Identifier deriving Show
-data CompoundStatement = CompoundStatement StatementList deriving (Show)
 data StatementList = ComplexStatement Statement StatementList | SimpleStatement Statement deriving Show
 data Statement =
     -- Assignment -> LValue Assign Condition
@@ -183,14 +182,15 @@ data Statement =
     -- WhileStatement -> KW_WHILE Condition KW_DO Statement
     | WhileStatement Condition Statement
     -- IfStatement -> KW_IF Condition KW_THEN Statement KW_ELSE Statement
-    | IfStatement Condition Statement Statement deriving Show
+    | IfStatement Condition Statement Statement
+    | CompoundStatement StatementList deriving Show
 
-data Exp = 
+data Exp =
     SingleExp String Term
     | BinaryExp String Term Exp  -- operator, left term, right expression
     deriving (Show)
 
-data Term = 
+data Term =
     SingleFactor Factor
     | BinaryTerm Factor String Term  -- left factor, operator, right term
     deriving (Show)
@@ -198,15 +198,15 @@ data Term =
 data RelOp = RelOp String deriving (Show)
 
 -- Fixed condition to properly store both expressions and operator
-data Condition = 
+data Condition =
     SimpleCondition Exp
     | RelationalCondition Exp RelOp Exp
     deriving (Show)
 
-data Factor = 
-    FactorNumber Natural 
-    | FactorLValue LValue 
-    | FactorParen Condition 
+data Factor =
+    FactorNumber Natural
+    | FactorLValue LValue
+    | FactorParen Condition
     deriving (Show)
 
 data LValue = LValue Identifier deriving (Show)
@@ -253,7 +253,7 @@ parseConstDefList = do
 parseConstDef :: Parser ConstDef
 parseConstDef = do
     id <- identifier
-    symbol equal 
+    symbol equal
     const <- parseConstant
     symbol semicolon
     return (ConstDef id const)
@@ -264,8 +264,8 @@ parseNum = do
     num <- nat
     return (Number op num)
 
-parseConstant :: Parser Constant 
-parseConstant = do 
+parseConstant :: Parser Constant
+parseConstant = do
     num <- parseNum
     return (ConstNumber num)
     <|> do
@@ -283,7 +283,7 @@ parseTypeDefList = do
     t2 <- many parseTypeDef
     return (TypeDefList (t1 : t2))
 
-parseTypeDef :: Parser TypeDef 
+parseTypeDef :: Parser TypeDef
 parseTypeDef = do
     id <- identifier
     symbol equal
@@ -292,7 +292,7 @@ parseTypeDef = do
     return (TypeDef id ty)
 
 
-parseType :: Parser Type 
+parseType :: Parser Type
 parseType =
     parseSubrangeType
     <|>
@@ -301,10 +301,10 @@ parseType =
 parseSubrangeType :: Parser Type
 parseSubrangeType = do
     symbol lbracket
-    c1 <- parseConstant 
+    c1 <- parseConstant
     symbol range
-    c2 <- parseConstant 
-    symbol rbracket 
+    c2 <- parseConstant
+    symbol rbracket
     return (SubrangeType c1 c2)
 
 parseTypeIdentifer :: Parser Type
@@ -321,7 +321,7 @@ parseVarDeclList = do
 
 
 parseVarDecl :: Parser VarDecl
-parseVarDecl = do 
+parseVarDecl = do
     id <- identifier
     symbol colon
     ty <- parseTypeIdentifer
@@ -344,15 +344,8 @@ parseProcedureHead = do
     symbol rparen
     return (ProcedureHead id)
 
-parseCompoundStatement :: Parser CompoundStatement
-parseCompoundStatement = do
-    symbol kwBegin
-    lst <- parseStatementList
-    symbol kwEnd
-    return (CompoundStatement lst)
-
 parseIfStatement :: Parser Statement
-parseIfStatement = do 
+parseIfStatement = do
     symbol kwIf
     cond <- parseCondition
     symbol kwThen
@@ -391,34 +384,35 @@ parseWhileStatement = do
     return (WhileStatement cond stat)
 
 parseWriteStatement :: Parser Statement
-parseWriteStatement = do 
+parseWriteStatement = do
     symbol kwWrite
     exp <- parseExp
     return (WriteStatement exp)
 
+parseCompoundStatement :: Parser Statement
+parseCompoundStatement = do
+    symbol kwBegin
+    lst <- parseStatementList
+    symbol kwEnd
+    return (CompoundStatement lst)
+
 parseStatement :: Parser Statement
-parseStatement = do 
-    parseAssignment
-    <|>
-    parseCallStatement
-    <|>
-    parseReadStatement
-    <|>
-    parseWriteStatement
-    <|>
-    parseWhileStatement
-    <|>
-    parseIfStatement
+parseStatement =
+        parseAssignment
+    <|> parseCallStatement
+    <|> parseReadStatement
+    <|> parseWriteStatement
+    <|> parseWhileStatement
+    <|> parseIfStatement
+    <|> parseCompoundStatement
 
 parseStatementList :: Parser StatementList
 parseStatementList = do
-    stat1 <- parseStatement
-    symbol semicolon
-    stat2 <- parseStatementList
-    return (ComplexStatement stat1 stat2)
-    <|> do
-    stat <- parseStatement 
-    return (SimpleStatement stat)
+    stat <- parseStatement
+    do symbol semicolon
+       rest <- parseStatementList
+       return (ComplexStatement stat rest)
+      <|> return (SimpleStatement stat)
 
 parseOptional :: [String] -> Parser String
 parseOptional ([]) = return ""
@@ -452,7 +446,7 @@ parseTerm = do
     <|> do
     f <- parseFactor
     return (SingleFactor f)
-    
+
 
 parseRelOp :: Parser RelOp
 parseRelOp = do
@@ -481,9 +475,9 @@ parseCondition = do
     exp2 <- parseExp
     return (RelationalCondition exp1 op exp2)
     <|> do
-    exp <- parseExp 
+    exp <- parseExp
     return (SimpleCondition exp)
-    
+
 
 parseFactor :: Parser Factor
 parseFactor =
