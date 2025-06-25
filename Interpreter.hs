@@ -68,6 +68,16 @@ evalDeclarationList (DecleratonList (dec:decs)) = do
 evalDeclaration :: Decleration -> Interpreter ()
 evalDeclaration (DecConstDefList cdf) = evalConstDefList cdf
 evalDeclaration (DecVarDeclList vdf) = evalVarDecList vdf
+evalDeclaration (DecTypeDefList tdf) = evalTypeDefList tdf
+
+evalTypeDefList :: TypeDefList -> Interpreter ()
+evalTypeDefList (TypeDefList []) = return ()
+evalTypeDefList (TypeDefList (td:tds)) = do
+    evalTypeDef td
+    evalTypeDefList (TypeDefList tds)
+
+evalTypeDef :: TypeDef -> Interpreter ()
+evalTypeDef (TypeDef (Identifier id) ty) = undefined
 
 evalConstDefList :: ConstDefList -> Interpreter ()
 evalConstDefList (ConstDefList []) = return ()
