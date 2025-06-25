@@ -378,6 +378,8 @@ parseCallStatement :: Parser Statement
 parseCallStatement = do
     symbol kwCall
     ident <- identifier
+    symbol lparen
+    symbol rparen
     return (CallStatement ident)
 
 parseWhileStatement :: Parser Statement
