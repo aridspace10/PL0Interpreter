@@ -6,11 +6,9 @@ procedure fact() =
         f := 1
     else 
       begin
-        // calculate factorial of n-1 and place in f
         n := n - 1;
         call fact(); 
-        n := n + 1;  // restore value of n
-        // now calculate factorial n
+        n := n + 1;
         f := f * n
       end
   end;
