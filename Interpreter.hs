@@ -8,7 +8,19 @@ import Control.Monad.State
 import Control.Monad.Except
 import qualified Data.Map as Map
 
-type Env = Map.Map String Value
+type VarEnv  = Map.Map String Value
+type ProcEnv = Map.Map String Procedure
+
+data Env = Env {
+  varEnv  :: VarEnv,
+  procEnv :: ProcEnv
+}
+
+data Procedure = Procedure {
+  procName   :: String,
+  parameters :: [String],
+  body       :: [Statement]
+} deriving (Show)
 
 data Value = IntVal (Maybe Int) | BoolVal (Maybe Bool) | Uninitialized Value
   deriving (Show, Eq)
@@ -18,15 +30,19 @@ type Interpreter a = StateT Env (ExceptT String IO) a
 lookupVar :: String -> Interpreter Value
 lookupVar name = do
     env <- get
-    case Map.lookup name env of
+    case Map.lookup name (varEnv env) of
         Just (Uninitialized val) -> throwError ("Variable '" ++ name ++ "' is uninitialized")
         Just val -> return val
         Nothing  -> throwError ("Undefined variable: " ++ name)
 
 assignVar :: String -> Value -> Interpreter ()
 assignVar name val = do
-    env <- get
-    put (Map.insert name val env)
+  env <- get
+  case Map.lookup name (varEnv env) of
+    Nothing -> throwError $ "Undefined variable: " ++ name
+    Just _  -> do
+      let newVarEnv = Map.insert name (val) (varEnv env)
+      put env { varEnv = newVarEnv }
 
 evalConstant :: Constant -> Interpreter Value
 evalConstant (ConstNumber (Number op val)) = do
