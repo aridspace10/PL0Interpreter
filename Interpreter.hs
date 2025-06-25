@@ -19,7 +19,7 @@ data Env = Env {
 data Procedure = Procedure {
   procName   :: String,
   parameters :: [String],
-  body       :: [Statement]
+  body       :: Block
 } deriving (Show)
 
 data Value = IntVal (Maybe Int) | BoolVal (Maybe Bool) | Uninitialized Value
@@ -69,6 +69,17 @@ evalDeclaration :: Decleration -> Interpreter ()
 evalDeclaration (DecConstDefList cdf) = evalConstDefList cdf
 evalDeclaration (DecVarDeclList vdf) = evalVarDecList vdf
 evalDeclaration (DecTypeDefList tdf) = evalTypeDefList tdf
+evalDeclaration (DecProcedureDef pd) = evalProcedureDef pd
+
+evalProcedureDef :: ProcedureDef -> Interpreter ()
+evalProcedureDef (ProcedureDef ph blk) = do
+    env <- get
+    name <- evalProcedureHead ph
+    let newProcEnv = Map.insert name (Procedure name [] blk) (procEnv env)
+    put env { procEnv = newProcEnv }
+
+evalProcedureHead :: ProcedureHead -> Interpreter [Char]
+evalProcedureHead (ProcedureHead (Identifier id)) = return id
 
 evalTypeDefList :: TypeDefList -> Interpreter ()
 evalTypeDefList (TypeDefList []) = return ()
