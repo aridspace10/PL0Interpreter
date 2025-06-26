@@ -173,7 +173,7 @@ evalCondition (RelationalCondition lexp (RelOp op) rexp) = do
             "<"  -> return $ BoolVal $ Just (l < r)
             "<=" -> return $ BoolVal $ Just (l <= r)
             "!=" -> return $ BoolVal $ Just (l /= r)
-            "==" -> return $ BoolVal $ Just (l == r)
+            "=" -> return $ BoolVal $ Just (l == r)
             _    -> throwError ("Unknown relational operator: " ++ op)
     (BoolVal l, BoolVal r) -> case op of
       "==" -> return $ BoolVal $ Just (l == r)
