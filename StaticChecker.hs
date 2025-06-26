@@ -9,7 +9,7 @@ import GHC.Natural
 data Scope = Scope SymTable [Error] Scope
 type SymTable = Map.Map String AssignedType
 data Error = Error Natural String
-data AssignedType = IntType | BoolType
+data AssignedType = IntType | BoolType deriving (Eq)
 type StaticChecker a = StateT Scope (Except String) a
 
 -- assignVar function
@@ -98,17 +98,19 @@ checkStatement (IfStatement cond stat1 stat2) = do
     checkStatement stat1
     checkStatement stat2
 checkStatement (WriteStatement exp) = do
-    checkExp exp
+    ty <- checkExp exp
+    return ()
 checkStatement (ReadStatement lval) = do
-    checkLValue lval
+    ty <- checkLValue lval
+    return ()
 checkStatement (WhileStatement cond stat) = do
     checkCondition cond
     checkStatement stat
 checkStatement (CompoundStatement stmtList) = do
     checkStatementList stmtList
 
-checkLValue :: LValue -> StaticChecker ()
-checkLValue = undefined
+checkLValue :: LValue -> StaticChecker AssignedType
+checkLValue (LValue (Identifier id)) = lookupType id
 
 checkCondition :: Condition -> StaticChecker AssignedType
 checkCondition (SimpleCondition exp) = checkExp exp
@@ -120,5 +122,13 @@ checkCondition (RelationalCondition lexp op rexp) = do
 checkExp :: Exp -> StaticChecker AssignedType
 checkExp (SingleExp op term) = do
     case op of
-        "" -> checkTerm
+        "" -> checkTerm term
         _ -> return IntType
+
+checkTerm :: Term -> StaticChecker AssignedType
+checkTerm (SingleFactor fact) = checkFactor fact
+
+checkFactor :: Factor -> StaticChecker AssignedType
+checkFactor (FactorNumber _) = return IntType
+checkFactor (FactorLValue lval) = checkLValue lval
+checkFactor (FactorParen cond) = checkCondition cond
