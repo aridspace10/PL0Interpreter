@@ -187,9 +187,9 @@ evalExp (SingleExp str term) = do
     case (val) of
         (IntVal me) -> case (me) of
             (Just e) -> do
-                if str == "+" 
-                then return (IntVal $ Just e)
-                else return $ IntVal $ Just (e * (-1))
+                if str == "-" 
+                then return (IntVal $ Just (-e))
+                else return (IntVal $ Just e)
         (BoolVal e) -> throwError ("Big Bad Moment No.1")
 evalExp (BinaryExp str term exp) = do
     eval <- evalTerm term
@@ -197,9 +197,9 @@ evalExp (BinaryExp str term exp) = do
     case (eval, eexp) of
         (IntVal mleft, IntVal mright) -> case (mleft, mright) of
             (Just left, Just right) -> do
-                if str == "+"
-                then return (IntVal $ Just $ left + right)
-                else return (IntVal $ Just $ -left + right)
+                if str == "-"
+                then return (IntVal $ Just $ -left + right)
+                else return (IntVal $ Just $ left + right)
 
 
 evalTerm :: Term -> Interpreter Value
