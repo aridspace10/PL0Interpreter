@@ -204,6 +204,18 @@ evalExp (BinaryExp str term exp) = do
 
 evalTerm :: Term -> Interpreter Value
 evalTerm (SingleFactor fact) = evalFactor fact
+evalTerm (BinaryTerm fact op term) = do
+    fact' <- evalFactor fact 
+    term' <- evalTerm term
+    case (op) of
+        "*" -> do
+            case (fact', term') of
+                (IntVal (Just left), IntVal (Just right)) -> return $ IntVal $ Just (left * right)
+        "/" -> do
+            case (fact', term') of
+                (IntVal (Just left), IntVal (Just right)) -> return $ IntVal $ Just (div left right)
+        _ -> throwError ("Undefined Variable: " ++ op)
+
 
 evalFactor :: Factor -> Interpreter Value
 evalFactor (FactorLValue lval) = evalLValue lval
