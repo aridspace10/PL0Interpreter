@@ -37,12 +37,9 @@ lookupVar name = do
 
 assignVar :: String -> Value -> Interpreter ()
 assignVar name val = do
-  env <- get
-  case Map.lookup name (varEnv env) of
-    Nothing -> throwError $ "Undefined variable: " ++ name
-    Just _  -> do
-      let newVarEnv = Map.insert name (val) (varEnv env)
-      put env { varEnv = newVarEnv }
+    env <- get
+    let newVarEnv = Map.insert name (val) (varEnv env)
+    put env { varEnv = newVarEnv }
 
 lookupProc :: String -> Interpreter Procedure
 lookupProc name = do
@@ -160,6 +157,8 @@ evalStatement (Assignment (LValue (Identifier id)) cond) = do
 evalStatement (CallStatement (Identifier id)) = do
     pro <- lookupProc id
     evalBlock (body pro)
+evalStatement (CompoundStatement stmtList) = do
+    evalStatementList stmtList
 
 evalCondition :: Condition -> Interpreter Value
 evalCondition (SimpleCondition exp) = evalExp exp
