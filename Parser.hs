@@ -131,6 +131,9 @@ token pa = do
 symbol :: String -> Parser String
 symbol xs = token $ string xs
 
+isSymbol :: String -> Parser Bool
+isSymbol xs = (symbol xs >> return True) <|> return False
+
 data KW_IF = KW_IF String deriving (Show)
 data KW_THEN = KW_THEN String deriving (Show)
 data KW_ELSE = KW_ELSE String deriving (Show)
@@ -450,8 +453,8 @@ parseTerm = do
 
 parseRelOp :: Parser RelOp
 parseRelOp = do
-    symbol "=="
-    return (RelOp "==")
+    symbol "="
+    return (RelOp "=")
     <|> do
     symbol ">"
     return (RelOp ">")

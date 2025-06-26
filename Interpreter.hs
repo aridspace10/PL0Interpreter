@@ -64,7 +64,7 @@ evalProgram (Program blk) = do
 evalBlock :: Block -> Interpreter ()
 evalBlock (Block decs cmpStmt) = do
     evalDeclarationList decs 
-    evalCompoundStatement cmpStmt
+    evalStatement cmpStmt
 
 evalDeclarationList :: DecleratonList -> Interpreter ()
 evalDeclarationList (DecleratonList []) = return ()
@@ -121,9 +121,6 @@ evalVarDec (VarDecl (Identifier id) (TypeIdentifer (Identifier ty))) = do
     else if ty == "bool"
     then assignVar id (Uninitialized $ BoolVal Nothing)
     else throwError ("Unknown Type ")
-
-evalCompoundStatement :: CompoundStatement -> Interpreter ()
-evalCompoundStatement (CompoundStatement stmtList) = evalStatementList stmtList
 
 evalStatementList :: StatementList -> Interpreter ()
 evalStatementList (ComplexStatement stmt stmtList) = do
