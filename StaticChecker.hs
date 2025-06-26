@@ -40,7 +40,7 @@ checkProgram (Program code) = do
 checkBlock :: Block -> StaticChecker ()
 checkBlock (Block decList compStat) = do
     checkDecList decList
-    checkCompoundStatement compStat
+    checkStatement compStat
 
 checkDecList :: DecleratonList -> StaticChecker ()
 checkDecList (DecleratonList []) = return ()
@@ -75,10 +75,6 @@ checkVarDef ((VarDecl (Identifier id) ty):vds) = do
                         "bool" -> assignVar id BoolType
     checkVarDef vds
 
-checkCompoundStatement :: CompoundStatement -> StaticChecker ()
-checkCompoundStatement (CompoundStatement statlst) = do
-    checkStatementList statlst
-
 checkStatementList :: StatementList -> StaticChecker ()
 checkStatementList (SimpleStatement stat) = do
     checkStatement stat
@@ -89,12 +85,11 @@ checkStatementList (ComplexStatement stat statLst) = do
 checkStatement :: Statement -> StaticChecker ()
 checkStatement (Assignment lval cond) = do
     checkLValue lval
-    checkCondition cond
+    condType <- checkCondition cond
     case (lval) of
         (LValue (Identifier id)) -> do
-            left <- lookupType id
-            right <- getConditionType cond
-            if left == right
+            idType <- lookupType id
+            if idType == condType
             then return ()
             else throwError "Cannot Assign"
         _ -> throwError "IDK how"
@@ -109,12 +104,21 @@ checkStatement (ReadStatement lval) = do
 checkStatement (WhileStatement cond stat) = do
     checkCondition cond
     checkStatement stat
+checkStatement (CompoundStatement stmtList) = do
+    checkStatementList stmtList
 
 checkLValue :: LValue -> StaticChecker ()
 checkLValue = undefined
 
-checkCondition :: Condition -> StaticChecker ()
-checkCondition = undefined
+checkCondition :: Condition -> StaticChecker AssignedType
+checkCondition (SimpleCondition exp) = checkExp exp
+checkCondition (RelationalCondition lexp op rexp) = do
+    checkExp lexp
+    checkExp rexp
+    return BoolType
 
-checkExp :: Exp -> StaticChecker ()
-checkExp = undefined
+checkExp :: Exp -> StaticChecker AssignedType
+checkExp (SingleExp op term) = do
+    case op of
+        "" -> checkTerm
+        _ -> return IntType
