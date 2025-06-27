@@ -352,11 +352,18 @@ parseIfStatement :: Parser Statement
 parseIfStatement = do
     symbol kwIf
     cond <- parseCondition
-    symbol kwThen
-    stat1 <- parseStatement
-    symbol kwElse
-    stat2 <- parseStatement
-    return (IfStatement cond stat1 stat2)
+    f <- isSymbol kwThen
+    (if f then (do
+        symbol kwThen
+        stat1 <- parseStatement
+        g <- isSymbol kwElse
+        (if g then (do
+            symbol kwElse
+            stat2 <- parseStatement
+            return (IfStatement cond stat1 stat2))
+            else return (ErrorNode "Expecting Symbol {Else}"))
+        )
+        else return (ErrorNode "Expecting Symbol {Then}"))
 
 parseAssignment :: Parser Statement
 parseAssignment = do
