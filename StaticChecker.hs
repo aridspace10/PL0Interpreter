@@ -34,22 +34,23 @@ lookupType id = do
         nothing -> throwError ("Undefined error " ++ id)
 
 
-countUnresolvedTypes :: Int -> [(String , AssignedType)] -> Int
-countUnresolvedTypes count [] = count
-countUnresolvedTypes count (x:xs) = do
+getUnresolvedTypes :: Int -> [(String , AssignedType)] -> Int
+getUnresolvedTypes count [] = count
+getUnresolvedTypes count (x:xs) = do
     case x of
-        (_, RefType str) -> countUnresolvedTypes (count + 1) xs
-        _ -> countUnresolvedTypes count xs
+        (_, RefType str) -> getUnresolvedTypes (count + 1) xs
+        _ -> getUnresolvedTypes count xs
 
 resolveTypes :: StaticChecker ()
 resolveTypes = do
     Scope symTable errors parent <- get
-    let before = countUnresolvedTypes 0 (Map.toList symTable)
-    let after = countUnresolvedTypes 0 (Map.toList symTable)
+    let before = getUnresolvedTypes 0 (Map.toList symTable)
+
+    let after = getUnresolvedTypes 0 (Map.toList symTable)
     if after == 0
     then return ()
     else if before == after
-        then throwError ("Unresolved Types !!!!!!!!!!")
+        then throwError "Unresolved Types !!!!!!!!!!"
         else resolveTypes
 
 
