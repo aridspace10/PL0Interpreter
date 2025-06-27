@@ -186,7 +186,8 @@ data Statement =
     | WhileStatement Condition Statement
     -- IfStatement -> KW_IF Condition KW_THEN Statement KW_ELSE Statement
     | IfStatement Condition Statement Statement
-    | CompoundStatement StatementList deriving Show
+    | CompoundStatement StatementList
+    | ErrorNode String deriving Show
 
 data Exp =
     SingleExp String Term
@@ -382,9 +383,11 @@ parseWhileStatement :: Parser Statement
 parseWhileStatement = do
     symbol kwWhile
     cond <- parseCondition
-    symbol kwDo
-    stat <- parseStatement
-    return (WhileStatement cond stat)
+    f <- isSymbol kwDo
+    (if f then (do
+        symbol kwDo
+        stat <- parseStatement
+        return (WhileStatement cond stat)) else return (ErrorNode "Expecting Symbol {Do}"))
 
 parseWriteStatement :: Parser Statement
 parseWriteStatement = do
