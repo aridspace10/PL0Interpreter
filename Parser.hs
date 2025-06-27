@@ -7,6 +7,7 @@ import           GHC.Natural              (Natural)
 import GHC.TypeLits (Nat)
 import FileIO
 import Data.List (filter)
+import Debug.Trace (trace)
 
 assign = ":=";
 colon = ":";
@@ -130,9 +131,6 @@ token pa = do
 -- parse a symbol, ignoring whitespace
 symbol :: String -> Parser String
 symbol xs = token $ string xs
-
-isSymbol :: String -> Parser Bool
-isSymbol xs = (symbol xs >> return True) <|> return False
 
 data Program = Program Block deriving (Show)
 data Block = Block DecleratonList Statement deriving (Show)
@@ -337,18 +335,11 @@ parseIfStatement :: Parser Statement
 parseIfStatement = do
     symbol kwIf
     cond <- parseCondition
-    f <- isSymbol kwThen
-    (if f then (do
-        symbol kwThen
-        stat1 <- parseStatement
-        g <- isSymbol kwElse
-        (if g then (do
-            symbol kwElse
-            stat2 <- parseStatement
-            return (IfStatement cond stat1 stat2))
-            else return (ErrorNode "Expecting Symbol {Else}"))
-        )
-        else return (ErrorNode "Expecting Symbol {Then}"))
+    symbol kwThen
+    stat1 <- parseStatement
+    symbol kwElse
+    stat2 <- parseStatement
+    return (IfStatement cond stat1 stat2)
 
 parseAssignment :: Parser Statement
 parseAssignment = do
@@ -375,11 +366,9 @@ parseWhileStatement :: Parser Statement
 parseWhileStatement = do
     symbol kwWhile
     cond <- parseCondition
-    f <- isSymbol kwDo
-    (if f then (do
-        symbol kwDo
-        stat <- parseStatement
-        return (WhileStatement cond stat)) else return (ErrorNode "Expecting Symbol {Do}"))
+    symbol kwDo
+    stat <- parseStatement
+    return (WhileStatement cond stat)
 
 parseWriteStatement :: Parser Statement
 parseWriteStatement = do
@@ -489,6 +478,7 @@ parseFactor =
 
 parseLValue :: Parser LValue
 parseLValue = do
+    space
     id <- identifier
     return (LValue id)
 

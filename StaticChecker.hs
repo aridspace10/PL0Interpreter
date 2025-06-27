@@ -6,13 +6,12 @@ import Control.Monad.Except
 import qualified Data.Map as Map
 import GHC.Natural
 
-data Scope = Scope SymTable [Error] Scope
-type SymTable = Map.Map String AssignedType
 data Error = Error Natural String
 data AssignedType = IntType | BoolType deriving (Eq)
+data Scope = Scope SymTable [Error] Scope
+type SymTable = Map.Map String AssignedType
 type StaticChecker a = StateT Scope (Except String) a
 
--- assignVar function
 assignVar :: String -> AssignedType -> StaticChecker ()
 assignVar name val = do
     Scope symTable errors parent <- get
