@@ -41,11 +41,28 @@ getUnresolvedTypes ys (x:xs) = do
         (_, RefType str) -> getUnresolvedTypes (ys ++ [x]) xs
         _ -> getUnresolvedTypes ys xs
 
+resolveUnresolvedType :: [String] -> (String, AssignedType) -> StaticChecker ()
+resolveUnresolvedType backlog x = do
+    case x of
+        (id, RefType str) -> do
+            if id `elem` backlog then throwError "Circular Definition Moment"
+            else do
+                ty <- lookupType str
+                case ty of
+                    IntType -> assignVar id IntType
+                    BoolType -> assignVar id BoolType
+                    RefType otherid -> resolveUnresolvedType (backlog ++ [id]) (str, RefType otherid)
+
+resolveUnresolvedTypes :: [(String, AssignedType)] -> StaticChecker ()
+resolveUnresolvedTypes (y:ys) = do
+    resolveUnresolvedType [] y
+    resolveUnresolvedTypes ys
+
 resolveTypes :: StaticChecker ()
 resolveTypes = do
     Scope symTable errors parent <- get
     let before = getUnresolvedTypes [] (Map.toList symTable)
-
+    resolveUnresolvedTypes before
     let after = getUnresolvedTypes [] (Map.toList symTable)
     if null after
     then return ()
