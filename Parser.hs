@@ -134,21 +134,6 @@ symbol xs = token $ string xs
 isSymbol :: String -> Parser Bool
 isSymbol xs = (symbol xs >> return True) <|> return False
 
-data KW_IF = KW_IF String deriving (Show)
-data KW_THEN = KW_THEN String deriving (Show)
-data KW_ELSE = KW_ELSE String deriving (Show)
-data KW_WHILE = KW_WHILE String deriving (Show)
-data KW_READ = KW_READ String deriving (Show)
-data KW_WRITE = KW_WRITE String deriving (Show)
-data KW_PROCEDURE = KW_PROCEDURE String deriving (Show)
-data KW_CALL = KW_CALL String deriving (Show)
-data KW_BEGIN = KW_BEGIN String deriving (Show)
-data KW_END = KW_END String deriving (Show)
-data KW_DO = KW_DO String deriving (Show)
-data LPAREN = LPAREN String deriving (Show)
-data RPAREN = RPAREN String deriving (Show)
-data ASSIGN = ASSIGN String deriving (Show)
-
 data Program = Program Block deriving (Show)
 data Block = Block DecleratonList Statement deriving (Show)
 data DecleratonList = DecleratonList [Decleration] deriving (Show)
