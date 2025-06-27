@@ -4,14 +4,15 @@ import Parser
 import Control.Monad.State
 import Control.Monad.Except
 import qualified Data.Map as Map
-import GHC.Natural
+import GHC.Natural ( Natural )
 
 data Error = Error Natural String
-data AssignedType = IntType | BoolType deriving (Eq)
+data AssignedType = IntType | BoolType | RefType String deriving (Eq)
 data Scope = Scope SymTable [Error] Scope
 type SymTable = Map.Map String AssignedType
 type StaticChecker a = StateT Scope (Except String) a
 
+---------------- HELPER -----------------------------
 assignVar :: String -> AssignedType -> StaticChecker ()
 assignVar name val = do
     Scope symTable errors parent <- get
@@ -32,6 +33,19 @@ lookupType id = do
         Just BoolType -> return BoolType
         nothing -> throwError ("Undefined error " ++ id)
 
+resolveTypes :: StaticChecker ()
+resolveTypes = do
+    Scope symTable errors parent <- get
+    let before = countUnresolvedTypes 
+    let after = countUnresolvedTypes
+    if after == 0
+    then return ()
+    else if before == after
+        then throwError ("Unresolved Types !!!!!!!!!!")
+        else resolveTypes
+
+
+----------------------------- CHECKING
 checkProgram :: Program -> StaticChecker ()
 checkProgram (Program code) = do
     checkBlock code
@@ -39,6 +53,7 @@ checkProgram (Program code) = do
 checkBlock :: Block -> StaticChecker ()
 checkBlock (Block decList compStat) = do
     checkDecList decList
+    resolveTypes
     checkStatement compStat
 
 checkDecList :: DecleratonList -> StaticChecker ()
