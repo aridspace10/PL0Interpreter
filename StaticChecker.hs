@@ -105,7 +105,6 @@ getConst :: Constant -> Int
 getConst (ConstNumber (Number "-" num)) = fromIntegral (-num)
 getConst (ConstNumber (Number op num)) = fromIntegral num
 
-
 checkConstDef :: [ConstDef] -> StaticChecker ()
 checkConstDef [] = return ()
 checkConstDef ((ConstDef (Identifier id) const):cds) = do
