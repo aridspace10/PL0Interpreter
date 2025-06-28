@@ -169,6 +169,7 @@ data Statement =
     | WhileStatement Condition Statement
     -- IfStatement -> KW_IF Condition KW_THEN Statement KW_ELSE Statement
     | IfStatement Condition Statement Statement
+    | EmptyStatement
     | CompoundStatement StatementList
     | ErrorNode String deriving Show
 
@@ -400,6 +401,8 @@ parseStatementList = do
        rest <- parseStatementList
        return (ComplexStatement stat rest)
       <|> return (SimpleStatement stat)
+    <|> do
+    return $ SimpleStatement EmptyStatement
 
 parseOptional :: [String] -> Parser String
 parseOptional ([]) = return ""
