@@ -7,7 +7,7 @@ import qualified Data.Map as Map
 import GHC.Natural ( Natural )
 
 data Error = Error Natural String
-data AssignedType = IntType | BoolType | RefType String deriving (Eq)
+data AssignedType = IntType | BoolType | RefType String | SubType Int Int deriving (Eq)
 data Scope = Scope SymTable [Error] Scope
 type SymTable = Map.Map String AssignedType
 type StaticChecker a = StateT Scope (Except String) a
@@ -90,6 +90,21 @@ checkDecList (DecleratonList (dec:decs)) = do
 
 checkDecleraton (DecConstDefList (ConstDefList cdf)) = checkConstDef cdf
 checkDecleraton (DecVarDeclList (VarDeclList vdf)) = checkVarDef vdf
+checkDecleraton (DecTypeDefList (TypeDefList tdf)) = checkTypeDef tdf
+
+checkTypeDef :: [TypeDef] -> StaticChecker ()
+checkTypeDef [] = return ()
+checkTypeDef ((TypeDef (Identifier id) (TypeIdentifer (Identifier tid))):tds) = do
+    assignVar id (RefType tid)
+checkTypeDef ((TypeDef (Identifier id) (SubrangeType c1 c2)):tds) = do
+    let ec1 = getConst c1
+    let ec2 = getConst c2
+    assignVar id (SubType ec1 ec2)
+
+getConst :: Constant -> Int
+getConst (ConstNumber (Number "-" num)) = fromIntegral (-num)
+getConst (ConstNumber (Number op num)) = fromIntegral num
+
 
 checkConstDef :: [ConstDef] -> StaticChecker ()
 checkConstDef [] = return ()
@@ -113,6 +128,7 @@ checkVarDef ((VarDecl (Identifier id) ty):vds) = do
                     case tid' of
                         "int" -> assignVar id IntType
                         "bool" -> assignVar id BoolType
+                        _ -> assignVar id (RefType tid')
     checkVarDef vds
 
 checkStatementList :: StatementList -> StaticChecker ()
