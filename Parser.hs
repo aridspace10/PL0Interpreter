@@ -7,7 +7,6 @@ import           GHC.Natural              (Natural)
 import GHC.TypeLits (Nat)
 import FileIO
 import Data.List (filter)
-import Debug.Trace (trace)
 
 assign = ":=";
 colon = ":";
@@ -169,9 +168,7 @@ data Statement =
     | WhileStatement Condition Statement
     -- IfStatement -> KW_IF Condition KW_THEN Statement KW_ELSE Statement
     | IfStatement Condition Statement Statement
-    | EmptyStatement
-    | CompoundStatement StatementList
-    | ErrorNode String deriving Show
+    | CompoundStatement StatementList deriving Show
 
 data Exp =
     SingleExp String Term
@@ -401,8 +398,6 @@ parseStatementList = do
        rest <- parseStatementList
        return (ComplexStatement stat rest)
       <|> return (SimpleStatement stat)
-    <|> do
-    return $ SimpleStatement EmptyStatement
 
 parseOptional :: [String] -> Parser String
 parseOptional ([]) = return ""
