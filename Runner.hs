@@ -3,6 +3,7 @@ module Runner where
 import Parser
 import Interpreter
 import FileIO
+import StaticChecker (runStaticChecker, nullScope, checkProgram)
 
 run :: FilePath -> IO ()
 run path = do
@@ -14,7 +15,11 @@ run path = do
         case parse parseProgram result of
             Nothing -> putStrLn "Parse error."
             Just (program, _) -> do
-                result <- runInterpreter (evalProgram program) emptyEnv
-                case result of
-                    Left err -> putStrLn ("Runtime error: " ++ err)
-                    Right (_, env) -> print env
+                checked <- runStaticChecker (checkProgram program) nullScope
+                case checked of
+                    Left err -> putStrLn ("Static error: " ++ err)
+                    Right (_, _) -> do
+                        result <- runInterpreter (evalProgram program) emptyEnv
+                        case result of
+                            Left err -> putStrLn ("Runtime error: " ++ err)
+                            Right (_, env) -> print env

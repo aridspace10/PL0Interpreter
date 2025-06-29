@@ -10,7 +10,7 @@ data Error = Error Natural String
 data AssignedType = IntType | BoolType | RefType String | SubType Int Int deriving (Eq)
 data Scope = Scope SymTable [Error] Scope
 type SymTable = Map.Map String AssignedType
-type StaticChecker a = StateT Scope (Except String) a
+type StaticChecker a = StateT Scope (ExceptT String IO) a
 
 ---------------- HELPER -----------------------------
 assignVar :: String -> AssignedType -> StaticChecker ()
@@ -187,3 +187,9 @@ checkFactor :: Factor -> StaticChecker AssignedType
 checkFactor (FactorNumber _) = return IntType
 checkFactor (FactorLValue lval) = checkLValue lval
 checkFactor (FactorParen cond) = checkCondition cond
+
+nullScope :: Scope
+nullScope = Scope Map.empty [] nullScope 
+
+runStaticChecker :: StaticChecker a -> Scope -> IO (Either String (a, Scope))
+runStaticChecker action scope = runExceptT (runStateT action scope)
