@@ -7,6 +7,7 @@ import FileIO
 import Control.Monad.State
 import Control.Monad.Except
 import qualified Data.Map as Map
+import Grammer
 
 type VarEnv  = Map.Map String Value
 type ProcEnv = Map.Map String Procedure

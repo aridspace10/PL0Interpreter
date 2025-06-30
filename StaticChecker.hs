@@ -5,6 +5,7 @@ import Control.Monad.State
 import Control.Monad.Except
 import qualified Data.Map as Map
 import GHC.Natural ( Natural )
+import Grammer
 
 data Error = Error Natural String
 data AssignedType = IntType | BoolType | RefType String | SubType Int Int deriving (Eq)

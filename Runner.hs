@@ -4,6 +4,7 @@ import Parser
 import Interpreter
 import FileIO
 import StaticChecker (runStaticChecker, nullScope, checkProgram)
+import Grammer
 
 run :: FilePath -> IO ()
 run path = do
