@@ -1,16 +1,8 @@
-var n: int;
-    f: int;
-procedure fact() =
-  begin
-    if n = 0 then
-        f := 1
-    else 
-      begin
-        f := 0
-      end
-  end;
+var
+  x: int;
 begin
-    n := 5;
-    call fact();
-    write f
+  x := 2+3;
+  write x;
+  x := x-1;
+  write x
 end

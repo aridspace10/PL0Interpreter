@@ -182,9 +182,11 @@ checkExp (SingleExp op term) = do
     case op of
         "" -> checkTerm term
         _ -> return IntType
+checkExp (BinaryExp op term exp) = return IntType
 
 checkTerm :: Term -> StaticChecker AssignedType
 checkTerm (SingleFactor fact) = checkFactor fact
+checkTerm (BinaryTerm fact op term) = return IntType
 
 checkFactor :: Factor -> StaticChecker AssignedType
 checkFactor (FactorNumber _) = return IntType

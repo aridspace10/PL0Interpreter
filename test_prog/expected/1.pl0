@@ -1,0 +1,2 @@
+100
+Env {varEnv = fromList [("x",IntVal (Just (-100))),("y",IntVal (Just 100)),("z",BoolVal (Just False))], procEnv = fromList []}

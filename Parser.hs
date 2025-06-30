@@ -367,14 +367,27 @@ parseExp :: Parser Exp
 parseExp = do
     op <- parseOptional ["+", "-"]
     term <- parseTerm
-    maybeRest <- optional parseRestOfExp
-    case maybeRest of
-        Nothing -> return (SingleExp op term)
-        Just ex -> return (BinaryExp op term ex)
-  where
-    parseRestOfExp = do
-        symbol "+" <|> symbol "-"  -- Must find actual operator
-        parseExp
+    rest <- parseAdditionalExp
+    case rest of
+        Empty -> return (SingleExp op term)
+        _ -> return (BinaryExp "" term rest)
+
+parseAdditionalExp :: Parser Exp
+parseAdditionalExp = do
+    symbol "+"
+    term <- parseTerm
+    rest <- parseAdditionalExp
+    case rest of
+        Empty -> return (SingleExp "+" term)
+        _ -> return (BinaryExp "-" term rest)
+    <|> do
+    symbol "-"
+    term <- parseTerm
+    rest <- parseAdditionalExp
+    case rest of
+        Empty -> return (SingleExp "-" term)
+        _ -> return (BinaryExp "-" term rest)
+    <|> return Empty
 
 parseTerm :: Parser Term
 parseTerm = do

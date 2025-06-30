@@ -43,6 +43,7 @@ data Statement =
 data Exp =
     SingleExp String Term
     | BinaryExp String Term Exp  -- operator, left term, right expression
+    | Empty
     deriving (Show)
 
 data Term =
