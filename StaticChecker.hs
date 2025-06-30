@@ -55,6 +55,7 @@ resolveUnresolvedType backlog x = do
                     RefType otherid -> resolveUnresolvedType (backlog ++ [id]) (str, RefType otherid)
 
 resolveUnresolvedTypes :: [(String, AssignedType)] -> StaticChecker ()
+resolveUnresolvedTypes [] = return ()
 resolveUnresolvedTypes (y:ys) = do
     resolveUnresolvedType [] y
     resolveUnresolvedTypes ys
@@ -120,6 +121,7 @@ checkConstDef ((ConstDef (Identifier id) const):cds) = do
     checkConstDef cds
 
 checkVarDef :: [VarDecl] -> StaticChecker ()
+checkVarDef [] = return ()
 checkVarDef ((VarDecl (Identifier id) ty):vds) = do
     case ty of
         (TypeIdentifer tid) -> do
