@@ -1,0 +1,7 @@
+5
+4
+3
+2
+1
+0
+Env {varEnv = fromList [("x",IntVal (Just 0))], procEnv = fromList []}
