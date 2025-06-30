@@ -38,7 +38,10 @@ data Statement =
     | WhileStatement Condition Statement
     -- IfStatement -> KW_IF Condition KW_THEN Statement KW_ELSE Statement
     | IfStatement Condition Statement Statement
+    | ForStatement ForHeader Statement
     | CompoundStatement StatementList deriving Show
+
+data ForHeader = ForHeader Statement Condition Exp deriving Show
 
 data Exp =
     SingleExp String Term
