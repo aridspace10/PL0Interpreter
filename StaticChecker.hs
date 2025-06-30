@@ -93,6 +93,13 @@ checkDecList (DecleratonList (dec:decs)) = do
 checkDecleraton (DecConstDefList (ConstDefList cdf)) = checkConstDef cdf
 checkDecleraton (DecVarDeclList (VarDeclList vdf)) = checkVarDef vdf
 checkDecleraton (DecTypeDefList (TypeDefList tdf)) = checkTypeDef tdf
+checkDecleraton (DecProcedureDef (ProcedureDef pd blk)) = do
+    checkProcedureHead pd
+    checkBlock blk
+
+checkProcedureHead :: ProcedureHead -> StaticChecker ()
+checkProcedureHead (ProcedureHead (Identifier id)) = return ()
+
 
 checkTypeDef :: [TypeDef] -> StaticChecker ()
 checkTypeDef [] = return ()
@@ -166,6 +173,7 @@ checkStatement (WhileStatement cond stat) = do
     checkStatement stat
 checkStatement (CompoundStatement stmtList) = do
     checkStatementList stmtList
+checkStatement (CallStatement id) = return ()
 
 checkLValue :: LValue -> StaticChecker AssignedType
 checkLValue (LValue (Identifier id)) = lookupType id
