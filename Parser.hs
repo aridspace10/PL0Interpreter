@@ -333,11 +333,17 @@ peekSymbol s = P $ \cs ->
 
 parseStatementList :: Parser StatementList
 parseStatementList = do
-    stat <- parseStatement
-    rest <- parseOptionalStatementList
-    case rest of
-        EmptyStatement -> return (SimpleStatement stat)
-        _ -> return (ComplexStatement stat rest)
+    firstStatement <- parseStatement
+    restStatements <- many parseStatementWithSemicolon
+    return $ buildStatementList (firstStatement : restStatements)
+  where
+    parseStatementWithSemicolon = do
+        symbol semicolon
+        parseStatement
+    
+    buildStatementList [s] = SimpleStatement s
+    buildStatementList (s:ss) = ComplexStatement s (buildStatementList ss)
+    buildStatementList [] = EmptyStatement -- not reachable
 
 parseOptionalStatementList :: Parser StatementList
 parseOptionalStatementList = do
@@ -361,12 +367,14 @@ parseExp :: Parser Exp
 parseExp = do
     op <- parseOptional ["+", "-"]
     term <- parseTerm
-    ex <- parseExp
-    return (BinaryExp op term ex)
-    <|> do
-    op <- parseOptional ["+", "-"]
-    term <- parseTerm
-    return (SingleExp op term)
+    maybeRest <- optional parseRestOfExp
+    case maybeRest of
+        Nothing -> return (SingleExp op term)
+        Just ex -> return (BinaryExp op term ex)
+  where
+    parseRestOfExp = do
+        symbol "+" <|> symbol "-"  -- Must find actual operator
+        parseExp
 
 parseTerm :: Parser Term
 parseTerm = do
