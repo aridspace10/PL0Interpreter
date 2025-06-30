@@ -35,7 +35,11 @@ CompoundStatement → KW BEGIN StatementList KW END
 StatementList → Statement {SEMICOLON Statement}
 
 Statement → Assignment | CallStatement | ReadStatement | WriteStatement|
-WhileStatement | IfStatement | CompoundStatement
+WhileStatement | IfStatement | ForStatement | CompoundStatement
+
+ForStatement → KW_FOR LPAREN ForHeader RPAREN KW_DO Statement
+
+ForHeader → [Assignment] SEMICOLON [Condition] SEMICOLON [Exp] SEMICOLON
 
 Assignment → LValue ASSIGN Condition
 
