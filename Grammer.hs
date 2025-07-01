@@ -27,7 +27,7 @@ data ProcedureHead = ProcedureHead Identifier deriving Show
 data StatementList = ComplexStatement Statement StatementList | SimpleStatement Statement | EmptyStatement deriving Show
 data Statement =
     -- Assignment -> LValue Assign Condition
-    Assignment LValue Condition
+    Assignment String LValue Condition
     -- CallStatement -> KW_CALL Identifier LPAREN RPAREN
     | CallStatement Identifier
     -- ReadStatement -> KW_READ LValue

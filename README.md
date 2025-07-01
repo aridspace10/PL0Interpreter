@@ -41,7 +41,7 @@ ForStatement → KW_FOR LPAREN ForHeader RPAREN KW_DO Statement
 
 ForHeader → [Assignment] SEMICOLON [Condition] SEMICOLON [Exp]
 
-Assignment → LValue ASSIGN Condition
+Assignment → LValue ASSIGN Condition | LValue PLUSEQUAL Condition | LValue MINUSEQUALS Condition
 
 CallStatement → KW CALL IDENTIFIER LPAREN RPAREN
 

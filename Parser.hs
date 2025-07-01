@@ -42,6 +42,8 @@ kwVar = "var";
 kwWhile = "while";
 kwWrite = "write";
 kwFor = "for";
+kwMinusEquals = "-=";
+kwPlusEquals = "+=";
 
 newtype Parser a = P (String -> Maybe (a, String))
 
@@ -279,7 +281,17 @@ parseAssignment = do
     lval <- parseLValue
     symbol assign
     cond <- parseCondition
-    return (Assignment lval cond)
+    return (Assignment "" lval cond)
+    <|> do
+    lval <- parseLValue
+    symbol kwPlusEquals
+    cond <- parseCondition
+    return (Assignment "+" lval cond)
+    <|> do
+    lval <- parseLValue
+    symbol kwMinusEquals
+    cond <- parseCondition
+    return (Assignment "-" lval cond)
 
 parseReadStatement :: Parser Statement
 parseReadStatement = do
