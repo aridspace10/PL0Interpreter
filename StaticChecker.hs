@@ -174,6 +174,8 @@ checkStatement (WhileStatement cond stat) = do
 checkStatement (CompoundStatement stmtList) = do
     checkStatementList stmtList
 checkStatement (CallStatement id) = return ()
+checkStatement (ForStatement header stmt) = do
+    checkStatement stmt
 
 checkLValue :: LValue -> StaticChecker AssignedType
 checkLValue (LValue (Identifier id)) = lookupType id

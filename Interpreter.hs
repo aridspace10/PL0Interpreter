@@ -160,6 +160,27 @@ evalStatement (CallStatement (Identifier id)) = do
     evalBlock (body pro)
 evalStatement (CompoundStatement stmtList) = do
     evalStatementList stmtList
+evalStatement (ForStatement (ForHeader assign cond expr) stmt) = do
+    evalStatement assign
+    case assign of
+        (Assignment (LValue (Identifier id)) _) -> evalForLoop id cond expr stmt
+        _ -> throwError "Assingment wasn't used"
+
+evalForLoop :: String -> Condition -> Exp -> Statement -> Interpreter ()
+evalForLoop id cond exp stmt = do
+    val <- evalCondition cond
+    case val of
+        (BoolVal r) -> do
+            case r of
+                (Just v) -> do
+                    if v then (do
+                        evalStatement stmt
+                        result <- evalExp exp
+                        assignVar id result
+                        evalForLoop id cond exp stmt)
+                    else return ()
+                _ -> throwError ("Unknown Error")
+        _ -> throwError "Condition should evaluate to a bool Value"
 
 evalCondition :: Condition -> Interpreter Value
 evalCondition (SimpleCondition exp) = evalExp exp

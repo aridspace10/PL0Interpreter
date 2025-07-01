@@ -1,0 +1,12 @@
+var 
+  x: int; 
+  i: int; 
+begin  
+  x := 0; 
+  for (i := 0; i < 5; i+1) do 
+    begin
+        write i;
+        x := x + i*i
+    end;
+  write x
+end

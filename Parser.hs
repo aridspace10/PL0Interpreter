@@ -344,7 +344,6 @@ parseForHeader = do
     cond <- parseCondition
     symbol semicolon
     exp <- parseExp
-    symbol semicolon
     return (ForHeader assign cond exp)
 
 peekSymbol :: String -> Parser Bool
