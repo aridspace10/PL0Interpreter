@@ -41,6 +41,7 @@ kwType = "type";
 kwVar = "var";
 kwWhile = "while";
 kwWrite = "write";
+kwFor = "for";
 
 newtype Parser a = P (String -> Maybe (a, String))
 
@@ -323,7 +324,28 @@ parseStatement =
     <|> parseWriteStatement
     <|> parseWhileStatement
     <|> parseIfStatement
+    <|> parseForStatement
     <|> parseCompoundStatement
+
+parseForStatement :: Parser Statement
+parseForStatement = do
+    symbol kwFor
+    symbol lparen
+    header <- parseForHeader
+    symbol rparen
+    symbol kwDo
+    stat <- parseStatement
+    return (ForStatement header stat)
+
+parseForHeader :: Parser ForHeader
+parseForHeader = do
+    assign <- parseAssignment 
+    symbol semicolon
+    cond <- parseCondition
+    symbol semicolon
+    exp <- parseExp
+    symbol semicolon
+    return (ForHeader assign cond exp)
 
 peekSymbol :: String -> Parser Bool
 peekSymbol s = P $ \cs ->
