@@ -152,9 +152,18 @@ evalStatement (WhileStatement cond stat) = do
                     else return ()
                 _ -> return ()
         _ -> throwError ("Big Boy Problem")
-evalStatement (Assignment (LValue (Identifier id)) cond) = do
-    econd <- evalCondition cond 
-    assignVar id econd
+evalStatement (Assignment ty (LValue (Identifier id)) cond) = do
+    econd <- evalCondition cond  
+    case ty of
+        "" -> assignVar id econd
+        _ -> do
+            val <- lookupVar id
+            case (val, econd) of
+                (IntVal (Just lval), IntVal (Just rval)) -> do
+                    case ty of
+                        "-" -> assignVar id (IntVal $ Just (lval - rval))
+                        "+" -> assignVar id (IntVal $ Just (lval + rval))
+
 evalStatement (CallStatement (Identifier id)) = do
     pro <- lookupProc id
     evalBlock (body pro)
@@ -163,7 +172,7 @@ evalStatement (CompoundStatement stmtList) = do
 evalStatement (ForStatement (ForHeader assign cond expr) stmt) = do
     evalStatement assign
     case assign of
-        (Assignment (LValue (Identifier id)) _) -> evalForLoop id cond expr stmt
+        (Assignment _ (LValue (Identifier id)) _) -> evalForLoop id cond expr stmt
         _ -> throwError "Assingment wasn't used"
 
 evalForLoop :: String -> Condition -> Exp -> Statement -> Interpreter ()

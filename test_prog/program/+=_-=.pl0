@@ -1,0 +1,10 @@
+var x: int;
+    y: int;
+    z: bool;
+begin
+  x := 0;
+  x += 5;
+  write x;
+  x -= 3;
+  write x
+end

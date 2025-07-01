@@ -148,7 +148,7 @@ checkStatementList (ComplexStatement stat statLst) = do
     checkStatementList statLst
 
 checkStatement :: Statement -> StaticChecker ()
-checkStatement (Assignment lval cond) = do
+checkStatement (Assignment ty lval cond) = do
     checkLValue lval
     condType <- checkCondition cond
     case (lval) of
