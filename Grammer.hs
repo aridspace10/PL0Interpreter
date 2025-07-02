@@ -26,17 +26,11 @@ data ProcedureDef = ProcedureDef ProcedureHead Block deriving (Show)
 data ProcedureHead = ProcedureHead Identifier deriving Show
 data StatementList = ComplexStatement Statement StatementList | SimpleStatement Statement | EmptyStatement deriving Show
 data Statement =
-    -- Assignment -> LValue Assign Condition
     Assignment String LValue Condition
-    -- CallStatement -> KW_CALL Identifier LPAREN RPAREN
     | CallStatement Identifier
-    -- ReadStatement -> KW_READ LValue
     | ReadStatement LValue
-    -- WriteStatement -> KW_WRITE Exp
     | WriteStatement Exp
-    -- WhileStatement -> KW_WHILE Condition KW_DO Statement
     | WhileStatement Condition Statement
-    -- IfStatement -> KW_IF Condition KW_THEN Statement KW_ELSE Statement
     | IfStatement Condition Statement Statement
     | ForStatement ForHeader Statement
     | CompoundStatement StatementList deriving Show
@@ -45,18 +39,17 @@ data ForHeader = ForHeader Statement Condition Exp deriving Show
 
 data Exp =
     SingleExp String Term
-    | BinaryExp String Term Exp  -- operator, left term, right expression
+    | BinaryExp String Term Exp
     | Empty
     deriving (Show)
 
 data Term =
     SingleFactor Factor
-    | BinaryTerm Factor String Term  -- left factor, operator, right term
+    | BinaryTerm Factor String Term
     deriving (Show)
 
 data RelOp = RelOp String deriving (Show)
 
--- Fixed condition to properly store both expressions and operator
 data Condition =
     SimpleCondition Exp
     | RelationalCondition Exp RelOp Exp
