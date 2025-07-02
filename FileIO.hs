@@ -12,6 +12,7 @@ module FileIO (
 import System.IO (withFile, IOMode(..), hPutStr, hGetContents)
 import System.Directory (doesFileExist)
 import Control.Exception (catch, IOException)
+import GHC.Weak (finalize)
 
 -- | Read entire contents of a file as a String.
 readFileContents :: FilePath -> IO (Either String String)
@@ -57,3 +58,14 @@ readFileLines path =
 writeFileLines :: FilePath -> [String] -> IO (Either String ())
 writeFileLines path linesContent =
     writeFileContents path (unlines linesContent)
+
+makeUseable :: Int -> String -> String -> String
+makeUseable _ [] final = final
+makeUseable removing (x:y:xs) final
+    | x == '/' && y == '/'  = makeUseable 1 xs final
+    | x == '/' && y == 'n'  = makeUseable 0 xs final
+    | removing == 1         = makeUseable 1 (y:xs) final
+    | otherwise             = makeUseable 0 (y:xs) (final ++ [x])
+makeUseable removing [x] final
+    | removing == 1  = final
+    | otherwise      = final ++ [x]
