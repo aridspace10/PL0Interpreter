@@ -150,6 +150,10 @@ token pa = do
 symbol :: String -> Parser String
 symbol xs = token $ string xs
 
+expectSymbol :: String -> String -> Parser String
+expectSymbol expected context = 
+    symbol expected <|> parseError ("Expected '" ++ expected ++ "' " ++ context)
+
 parseProgram :: Parser Program
 parseProgram = do
     b <- parseBlock
