@@ -83,17 +83,16 @@ instance Alternative Parser where
             Left _ -> p2 input pos  -- Try second parser if first fails
             success -> success
 
-
 -- aux function for removing decorator
-parse :: Parser a -> String -> Maybe (a, String)
+parse :: Parser a -> String -> Int -> Either ParsingError (a, String, Int)
 parse (P p) cs = p cs
 
 -- parse one character
 item :: Parser Char
-item = P $ foo
-  where
-    foo (c:cs) = Just $ (c, cs)
-    foo _      = Nothing
+item = P $ \input pos ->
+    case input of
+        (c:cs) -> Right (c, cs, pos + 1)
+        []     -> Left $ ParsingError pos "Unexpecting Input"
 
 -- parse a char c when P c.
 sat :: (Char -> Bool) -> Parser Char
