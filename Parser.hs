@@ -50,39 +50,39 @@ data ParsingError = ParsingError {
     errorMessage :: String
 }
 
-newtype Parser a = P (String -> Either ParsingError (a, String, Int))
+newtype Parser a = P (String -> Int -> Either ParsingError (a, String, Int))
 
 instance Functor Parser where
-    fmap :: (a -> b) -> Parser a -> Parser b
-    fmap g pa = do
-      a <- pa
-      return $ g a
+    fmap f (P p) = P $ \input pos ->
+        case p input pos of
+            Left err -> Left err
+            Right (a, input', pos') -> Right (f a, input', pos')
 
 instance Applicative Parser where
-    pure :: a -> Parser a
-    pure a = P (\cs -> Just (a,cs))
-
-    (<*>) :: Parser (a -> b) -> Parser a -> Parser b
-    pg <*> pa = do
-      g <- pg
-      g <$> pa
+    pure a = P $ \input pos -> Right (a, input, pos)
+    (P pf) <*> (P pa) = P $ \input pos ->
+        case pf input pos of
+            Left err -> Left err
+            Right (f, input', pos') ->
+                case pa input' pos' of
+                    Left err -> Left err
+                    Right (a, input'', pos'') -> Right (f a, input'', pos'')
 
 instance Monad Parser where
-    (>>=) :: Parser a -> (a -> Parser b) -> Parser b
-    p >>= f = P $ \cs ->
-        case parse p cs of
-          Nothing        -> Nothing
-          Just (a, str') -> parse (f a) str'
+    (P p) >>= f = P $ \input pos ->
+        case p input pos of
+            Left err -> Left err
+            Right (a, input', pos') ->
+                let (P p') = f a
+                in p' input' pos'
 
 instance Alternative Parser where
-    empty :: Parser a
-    empty = P $ \str -> Nothing
+    empty = parseError "No alternatives matched"
+    (P p1) <|> (P p2) = P $ \input pos ->
+        case p1 input pos of
+            Left _ -> p2 input pos  -- Try second parser if first fails
+            success -> success
 
-    (<|>) :: Parser a -> Parser a -> Parser a
-    p <|> q = P $ \cs ->
-        case parse p cs of
-          Nothing -> parse q cs
-          mx      -> mx
 
 -- aux function for removing decorator
 parse :: Parser a -> String -> Maybe (a, String)
