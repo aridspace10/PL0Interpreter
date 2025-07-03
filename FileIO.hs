@@ -1,13 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module FileIO (
-    readFileContents,
-    writeFileContents,
-    appendFileContents,
-    fileExists,
-    readFileLines,
-    writeFileLines
-) where
+module FileIO where
 
 import System.IO (withFile, IOMode(..), hPutStr, hGetContents)
 import System.Directory (doesFileExist)
@@ -63,9 +56,9 @@ makeUseable :: Int -> String -> String -> String
 makeUseable _ [] final = final
 makeUseable removing (x:y:xs) final
     | x == '/' && y == '/'  = makeUseable 1 xs final
-    | x == '/' && y == 'n'  = makeUseable 0 xs final
+    | x == '/' && y == 'n' = makeUseable 0 xs final
     | removing == 1         = makeUseable 1 (y:xs) final
     | otherwise             = makeUseable 0 (y:xs) (final ++ [x])
 makeUseable removing [x] final
-    | removing == 1  = final
-    | otherwise      = final ++ [x]
+    | removing == 1 = final
+    | otherwise     = final ++ [x]
