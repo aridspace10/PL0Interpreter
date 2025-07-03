@@ -45,7 +45,12 @@ kwFor = "for";
 kwMinusEquals = "-=";
 kwPlusEquals = "+=";
 
-newtype Parser a = P (String -> Maybe (a, String))
+data ParsingError = ParsingError {
+    errorPosition :: Int,
+    errorMessage :: String
+}
+
+newtype Parser a = P (String -> Either ParsingError (a, String, Int))
 
 instance Functor Parser where
     fmap :: (a -> b) -> Parser a -> Parser b
