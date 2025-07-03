@@ -13,9 +13,11 @@ run path = do
     Left err -> putStrLn ("Error reading file: " ++ err)
     Right content -> do
         let result = removeNewlines content
-        case parse parseProgram result of
-            Nothing -> putStrLn "Parse error."
-            Just (program, _) -> do
+        case parseWithErrors parseProgram result of
+            Left err -> do
+                putStrLn $ "Parse Error at position " ++ show (errorPosition err)
+                putStrLn $ "Message: " ++ errorMessage err
+            Right (program, "") -> do
                 checked <- runStaticChecker (checkProgram program) nullScope
                 case checked of
                     Left err -> putStrLn ("Static error: " ++ err)

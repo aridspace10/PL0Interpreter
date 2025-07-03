@@ -83,6 +83,17 @@ instance Alternative Parser where
             Left _ -> p2 input pos  -- Try second parser if first fails
             success -> success
 
+parseError :: String -> Parser a
+parseError msg = P $ \input pos -> 
+    Left $ ParsingError pos msg
+
+-- Parse with position tracking
+parseWithErrors :: Parser a -> String -> Either ParsingError (a, String)
+parseWithErrors (P p) input = 
+    case p input 0 of
+        Left err -> Left err
+        Right (a, remaining, _) -> Right (a, remaining)
+
 -- aux function for removing decorator
 parse :: Parser a -> String -> Int -> Either ParsingError (a, String, Int)
 parse (P p) cs = p cs
@@ -362,12 +373,6 @@ parseForHeader = do
     exp <- parseExp
     return (ForHeader assign cond exp)
 
-peekSymbol :: String -> Parser Bool
-peekSymbol s = P $ \cs ->
-  case parse (symbol s) cs of
-    Just _  -> Just (True, cs)
-    Nothing -> Just (False, cs)
-
 parseStatementList :: Parser StatementList
 parseStatementList = do
     firstStatement <- parseStatement
@@ -508,11 +513,17 @@ isAlphaNum c = isAlpha c || elem c ['0'..'9']
 removeNewlines :: String -> String
 removeNewlines = map (\c -> if c == '\n' then ' ' else c)
 
-parseFile :: FilePath -> IO ()
-parseFile path = do
-  res <- readFileContents path
-  case res of
-    Left err -> putStrLn ("Error reading file: " ++ err)
-    Right content -> do
-        let result = removeNewlines content
-        print (parse parseProgram result)
+parseFileWithErrors :: FilePath -> IO ()
+parseFileWithErrors path = do
+    content <- readFile path
+    case parseWithErrors parseProgram content of
+        Left err -> do
+            putStrLn $ "Parse Error at position " ++ show (errorPosition err)
+            putStrLn $ "Message: " ++ errorMessage err
+        Right (ast, "") -> do
+            putStrLn "Parse successful!"
+            print ast
+        Right (ast, remaining) -> do
+            putStrLn "Parse completed with remaining input:"
+            putStrLn $ "Remaining: " ++ show remaining
+            print ast
