@@ -16,8 +16,8 @@ type Memory        = V.Vector (Maybe Value)
 type ProcEnv       = Map.Map String Procedure
 
 data varEnv = varEnv {
-    mapping :: MemoryMapping
-    memory :: Memory
+    mapping :: MemoryMapping,
+    memory :: Memory,
     nextFree :: Int
 }
 
@@ -42,9 +42,10 @@ type Interpreter a = StateT Env (ExceptT String IO) a
 lookupVar :: String -> Interpreter Value
 lookupVar name = do
     env <- get
-    case Map.lookup name (varEnv env) of
-        Just (Uninitialized val) -> throwError ("Variable '" ++ name ++ "' is uninitialized")
-        Just val -> return val
+    case Map.lookup name (mapping varEnv env) of
+        Just val -> case memory.!? val of
+            Just (Uninitialized val) -> throwError ("Variable '" ++ name ++ "' is uninitialized")
+            Just val -> return val
         Nothing  -> throwError ("Undefined variable: " ++ name)
 
 assignVar :: String -> Value -> Interpreter ()
