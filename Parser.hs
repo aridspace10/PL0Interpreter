@@ -281,17 +281,17 @@ parseProcedureHead :: Parser ProcedureHead
 parseProcedureHead = do
     symbol kwProcedure
     id <- identifier
-    symbol lparen
-    symbol rparen
+    expectSymbol lparen "Expected {lparen} in Procedure Head"
+    expectSymbol lparen "Expected {rparen} in Procedure Head"
     return (ProcedureHead id)
 
 parseIfStatement :: Parser Statement
 parseIfStatement = do
     symbol kwIf
     cond <- parseCondition
-    symbol kwThen
+    expectSymbol kwThen "Expected {Then} after If Condition"
     stat1 <- parseStatement
-    symbol kwElse
+    expectSymbol kwElse "Expected {else} after If Statement"
     stat2 <- parseStatement
     return (IfStatement cond stat1 stat2)
 
@@ -322,15 +322,15 @@ parseCallStatement :: Parser Statement
 parseCallStatement = do
     symbol kwCall
     ident <- identifier
-    symbol lparen
-    symbol rparen
+    expectSymbol lparen "Expected {lparen} after Call Statement"
+    expectSymbol rparen "Expected {rparen} after Call Statement"
     return (CallStatement ident)
 
 parseWhileStatement :: Parser Statement
 parseWhileStatement = do
     symbol kwWhile
     cond <- parseCondition
-    symbol kwDo
+    expectSymbol kwDo "Expected {Do} after While Statement"
     stat <- parseStatement
     return (WhileStatement cond stat)
 
@@ -344,7 +344,7 @@ parseCompoundStatement :: Parser Statement
 parseCompoundStatement = do
     symbol kwBegin
     lst <- parseStatementList
-    symbol kwEnd
+    expectSymbol kwDo "Expected {end} after Statement List"
     return (CompoundStatement lst)
 
 parseStatement :: Parser Statement
@@ -361,19 +361,19 @@ parseStatement =
 parseForStatement :: Parser Statement
 parseForStatement = do
     symbol kwFor
-    symbol lparen
+    expectSymbol semicolon "Expecting {LPAREN} after {for} in For Statement"
     header <- parseForHeader
-    symbol rparen
-    symbol kwDo
+    expectSymbol semicolon "Expecting {RPAREN} after For Header"
+    expectSymbol kwDo "Expecting {Do} after RPAREN in For Statement"
     stat <- parseStatement
     return (ForStatement header stat)
 
 parseForHeader :: Parser ForHeader
 parseForHeader = do
     assign <- parseAssignment 
-    symbol semicolon
+    expectSymbol semicolon "Expecting {;} after assignment in For Statement"
     cond <- parseCondition
-    symbol semicolon
+    expectSymbol semicolon "Expecting {;} after Condition in For Statement"
     exp <- parseExp
     return (ForHeader assign cond exp)
 
