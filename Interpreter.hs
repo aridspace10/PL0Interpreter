@@ -7,10 +7,19 @@ import FileIO
 import Control.Monad.State
 import Control.Monad.Except
 import qualified Data.Map as Map
+import qualified Data.Vector as V
 import Grammer
 
-type VarEnv  = Map.Map String Value
-type ProcEnv = Map.Map String Procedure
+type Address       = Int
+type MemoryMapping = Map.Map String Address
+type Memory        = V.Vector (Maybe Value)
+type ProcEnv       = Map.Map String Procedure
+
+data varEnv = varEnv {
+    mapping :: MemoryMapping
+    memory :: Memory
+    nextFree :: Int
+}
 
 data Env = Env {
   varEnv  :: VarEnv,
@@ -23,8 +32,10 @@ data Procedure = Procedure {
   body       :: Block
 } deriving (Show)
 
-data Value = IntVal (Maybe Int) | BoolVal (Maybe Bool) | Uninitialized Value
-  deriving (Show, Eq)
+data Value = IntVal (Maybe Int) 
+            | BoolVal (Maybe Bool) 
+            | Uninitialized Value
+            deriving (Show, Eq)
 
 type Interpreter a = StateT Env (ExceptT String IO) a
 
