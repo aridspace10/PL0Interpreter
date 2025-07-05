@@ -1,0 +1,8 @@
+var a: array
+begin
+    a := new array(5);
+    a[0] = 1;
+    write a[0]; // should be 1
+    a[0] = 2;
+    write a[0] // should be 2
+end
