@@ -12,7 +12,7 @@ import Grammer
 
 type Address       = Int
 type MemoryMapping = Map.Map String Address
-type Memory        = V.Vector (Maybe Value)
+type Memory        = V.Vector Value
 type ProcEnv       = Map.Map String Procedure
 
 data VarEnv = VarEnv {
@@ -34,7 +34,6 @@ data Procedure = Procedure {
 
 data Value = IntVal (Maybe Int) 
             | BoolVal (Maybe Bool) 
-            | Uninitialized Value
             deriving (Show, Eq)
 
 type Interpreter a = StateT Env (ExceptT String IO) a
@@ -43,11 +42,10 @@ lookupVar :: String -> Interpreter Value
 lookupVar name = do
     env <- get
     let vEnv = varEnv env
-    case Map.lookup name (mapping varEnv env) of
+    case Map.lookup name (mapping vEnv) of
         Just address -> case memory vEnv V.!? address of
-            Just (Uninitialized val) -> throwError ("Variable '" ++ name ++ "' is uninitialized")
             Just val -> return val
-            Nothing -> throwError "Big bad Error"
+            Nothing -> throwError ("Variable '" ++ name ++ "' is uninitialized")
         Nothing  -> throwError ("Undefined variable: " ++ name)
 
 assignVar :: String -> Value -> Interpreter ()
@@ -142,9 +140,9 @@ evalVarDecList (VarDeclList (vd:vds)) = do
 evalVarDec :: VarDecl -> Interpreter ()
 evalVarDec (VarDecl (Identifier id) (TypeIdentifer (Identifier ty))) = do
     if ty == "int" 
-    then assignVar id (Uninitialized $ IntVal Nothing) 
+    then assignVar id (IntVal Nothing) 
     else if ty == "bool"
-    then assignVar id (Uninitialized $ BoolVal Nothing)
+    then assignVar id (BoolVal Nothing)
     else throwError ("Unknown Type ")
 
 evalStatementList :: StatementList -> Interpreter ()
@@ -289,8 +287,14 @@ evalLValue (LValue x) = evalIdentifier x
 
 emptyEnv :: Env
 emptyEnv = Env {
-  varEnv = Map.empty,
+  varEnv = emptyVarEnv,
   procEnv = Map.empty
+}
+
+emptyVarEnv = VarEnv {
+    mapping = Map.empty,
+    memory = V.replicate 64 Nothing,
+    nextFree = 0
 }
 
 runInterpreter :: Interpreter a -> Env -> IO (Either String (a, Env))
