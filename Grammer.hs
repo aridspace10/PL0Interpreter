@@ -19,6 +19,7 @@ data TypeDefList = TypeDefList [TypeDef] deriving (Show)
 data TypeDef = TypeDef Identifier Type deriving (Show)
 data Type =
     TypeIdentifer Identifier
+    | ArrayType Type
     | SubrangeType Constant Constant deriving (Show)
 data VarDeclList = VarDeclList [VarDecl] deriving (Show)
 data VarDecl = VarDecl Identifier Type deriving (Show)
