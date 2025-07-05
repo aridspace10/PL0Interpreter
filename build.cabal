@@ -1,0 +1,19 @@
+cabal-version:       3.0
+name:                PL0Interpreter
+version:             0.1.0.0
+author:              Jackson Van Duikeren
+maintainer:          youremail@example.com
+license:             MIT
+
+executable pl0-interpreter
+  main-is:             Runner.hs
+  hs-source-dirs:      .
+  build-depends:       base >=4.7 && <5,
+                       vector >=0.12,
+                       directory >=1.3.8.1
+  other-modules:       FileIO
+                       Grammar
+                       Interpreter
+                       Parser
+                       StaticChecker
+  default-language:    Haskell2010

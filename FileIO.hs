@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module FileIO (
     readFileContents,
     writeFileContents,

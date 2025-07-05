@@ -15,11 +15,11 @@ type MemoryMapping = Map.Map String Address
 type Memory        = V.Vector (Maybe Value)
 type ProcEnv       = Map.Map String Procedure
 
-data varEnv = varEnv {
+data VarEnv = VarEnv {
     mapping :: MemoryMapping,
     memory :: Memory,
     nextFree :: Int
-}
+} deriving Show
 
 data Env = Env {
   varEnv  :: VarEnv,
@@ -42,17 +42,32 @@ type Interpreter a = StateT Env (ExceptT String IO) a
 lookupVar :: String -> Interpreter Value
 lookupVar name = do
     env <- get
+    let vEnv = varEnv env
     case Map.lookup name (mapping varEnv env) of
-        Just val -> case memory.!? val of
+        Just address -> case memory vEnv V.!? address of
             Just (Uninitialized val) -> throwError ("Variable '" ++ name ++ "' is uninitialized")
             Just val -> return val
+            Nothing -> throwError "Big bad Error"
         Nothing  -> throwError ("Undefined variable: " ++ name)
 
 assignVar :: String -> Value -> Interpreter ()
 assignVar name val = do
     env <- get
-    let newVarEnv = Map.insert name (val) (varEnv env)
-    put env { varEnv = newVarEnv }
+    let vEnv = varEnv env
+    case Map.lookup name (mapping vEnv) of
+        -- Variable already exists
+        Just address -> do
+            let newMemory = memory vEnv V.// [(address, Just val)]
+            let newVEnv = vEnv { memory = newMemory }
+            put env { varEnv = newVEnv }
+
+        -- New variable, allocate memory
+        Nothing -> do
+            let address = nextFree vEnv
+            let newMapping = Map.insert name address (mapping vEnv)
+            let newMemory = memory vEnv V.// [(address, Just val)]
+            let newVEnv = vEnv { mapping = newMapping, memory = newMemory, nextFree = address + 1 }
+            put env { varEnv = newVEnv }
 
 lookupProc :: String -> Interpreter Procedure
 lookupProc name = do
