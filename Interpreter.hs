@@ -34,6 +34,7 @@ data Procedure = Procedure {
 
 data Value = IntVal (Maybe Int) 
             | BoolVal (Maybe Bool) 
+            | NotUsed
             deriving (Show, Eq)
 
 type Interpreter a = StateT Env (ExceptT String IO) a
@@ -55,7 +56,7 @@ assignVar name val = do
     case Map.lookup name (mapping vEnv) of
         -- Variable already exists
         Just address -> do
-            let newMemory = memory vEnv V.// [(address, Just val)]
+            let newMemory = memory vEnv V.// [(address, val)]
             let newVEnv = vEnv { memory = newMemory }
             put env { varEnv = newVEnv }
 
@@ -63,7 +64,7 @@ assignVar name val = do
         Nothing -> do
             let address = nextFree vEnv
             let newMapping = Map.insert name address (mapping vEnv)
-            let newMemory = memory vEnv V.// [(address, Just val)]
+            let newMemory = memory vEnv V.// [(address, val)]
             let newVEnv = vEnv { mapping = newMapping, memory = newMemory, nextFree = address + 1 }
             put env { varEnv = newVEnv }
 
@@ -293,7 +294,7 @@ emptyEnv = Env {
 
 emptyVarEnv = VarEnv {
     mapping = Map.empty,
-    memory = V.replicate 64 Nothing,
+    memory = V.replicate 64 NotUsed,
     nextFree = 0
 }
 
