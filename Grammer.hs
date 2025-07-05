@@ -27,6 +27,7 @@ data ProcedureHead = ProcedureHead Identifier deriving Show
 data StatementList = ComplexStatement Statement StatementList | SimpleStatement Statement | EmptyStatement deriving Show
 data Statement =
     Assignment String LValue Condition
+    | ArrayCreation LValue Type Constant
     | CallStatement Identifier
     | ReadStatement LValue
     | WriteStatement Exp
@@ -61,6 +62,6 @@ data Factor =
     | FactorParen Condition
     deriving (Show)
 
-data LValue = LValue Identifier deriving (Show)
+data LValue = ArrayAccess Identifier Constant | LValue Identifier deriving (Show)
 data Identifier = Identifier String deriving (Show)
 data Number = Number String Natural deriving (Show)
