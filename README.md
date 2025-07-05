@@ -16,7 +16,9 @@ TypeDefList → KW TYPE TypeDef {TypeDef }
 
 TypeDef → IDENTIFIER EQUALS Type SEMICOLON
 
-Type → TypeIdentifier | SubrangeType
+Type → TypeIdentifier | SubrangeType | ArrayType
+
+ArrayType -> kwArray LPAREN Type RPAREN
 
 TypeIdentifier → IDENTIFIER
 
@@ -41,7 +43,10 @@ ForStatement → KW_FOR LPAREN ForHeader RPAREN KW_DO Statement
 
 ForHeader → [Assignment] SEMICOLON [Condition] SEMICOLON [Exp]
 
-Assignment → LValue ASSIGN Condition | LValue PLUSEQUAL Condition | LValue MINUSEQUALS Condition
+Assignment → LValue ASSIGN Condition 
+           | LValue PLUSEQUAL Condition 
+           | LValue MINUSEQUALS Condition
+           | kwNew TypeIdentifer lparen Constant rparen
 
 CallStatement → KW CALL IDENTIFIER LPAREN RPAREN
 
@@ -65,5 +70,5 @@ Term → Factor {(TIMES | DIVIDE) Factor}
 
 Factor → LPAREN Condition RPAREN | NUMBER | LValue
 
-LValue → IDENTIFIER
+LValue → IDENTIFIER LBRACKET CONSTANT RBRACKET | IDENTIFIER
 

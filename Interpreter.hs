@@ -282,7 +282,6 @@ evalFactor (FactorParen cond) = do evalCondition cond
 evalIdentifier :: Identifier -> Interpreter Value
 evalIdentifier (Identifier name) = lookupVar name
 
--- Eval lvalues
 evalLValue :: LValue -> Interpreter Value
 evalLValue (LValue x) = evalIdentifier x
 

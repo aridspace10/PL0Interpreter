@@ -1,4 +1,4 @@
-var a: array
+var a: array(int)
 begin
     a := new array(5);
     a[0] = 1;

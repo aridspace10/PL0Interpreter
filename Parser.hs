@@ -45,6 +45,7 @@ kwFor = "for";
 kwMinusEquals = "-=";
 kwPlusEquals = "+=";
 kwNew = "new";
+kwArray = "array";
 
 newtype Parser a = P (String -> Maybe (a, String))
 
@@ -219,7 +220,17 @@ parseType :: Parser Type
 parseType =
     parseSubrangeType
     <|>
+    parseArrayType
+    <|>
     parseTypeIdentifer
+
+parseArrayType :: Parser Type
+parseArrayType = do
+    symbol kwArray
+    symbol lparen
+    ty <- parseType
+    symbol rparen
+    return (ArrayType ty)
 
 parseSubrangeType :: Parser Type
 parseSubrangeType = do
@@ -247,7 +258,7 @@ parseVarDecl :: Parser VarDecl
 parseVarDecl = do
     id <- identifier
     symbol colon
-    ty <- parseTypeIdentifer
+    ty <- parseType
     symbol semicolon
     return (VarDecl id ty)
 
@@ -302,7 +313,6 @@ parseAssignment = do
     symbol kwMinusEquals
     cond <- parseCondition
     return (Assignment "-" lval cond)
-
 
 parseReadStatement :: Parser Statement
 parseReadStatement = do
