@@ -504,6 +504,13 @@ parseLValue :: Parser LValue
 parseLValue = do
     space
     id <- identifier
+    symbol lparen
+    c <- parseConstant
+    symbol rparen
+    return $ ArrayAccess id c
+    <|> do
+    space
+    id <- identifier
     return (LValue id)
 
 number :: Parser Natural
