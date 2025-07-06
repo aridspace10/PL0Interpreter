@@ -197,6 +197,7 @@ checkStatement (ForStatement header stmt) = do
 
 checkLValue :: LValue -> StaticChecker AssignedType
 checkLValue (LValue (Identifier id)) = lookupType id
+checkLValue (LValue (ArrayAccess id const)) = lookupType id
 
 checkCondition :: Condition -> StaticChecker AssignedType
 checkCondition (SimpleCondition exp) = checkExp exp

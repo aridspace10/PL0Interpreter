@@ -139,11 +139,19 @@ evalVarDecList (VarDeclList (vd:vds)) = do
     evalVarDecList (VarDeclList vds)
 
 evalVarDec :: VarDecl -> Interpreter ()
-evalVarDec (VarDecl (Identifier id) (TypeIdentifer (Identifier ty))) = do
+evalVarDec (VarDecl (Identifier id) ty) = do
+    e <- evalType ty
+    assignVar id e
+
+evalType :: Type -> Interpreter Type
+evalType (ArrayType ty) = do
+    g <- evalType ty
+    return (ArrayType g)
+evalType (TypeIdentifer (Identifier ty)) = do
     if ty == "int" 
-    then assignVar id (IntVal Nothing) 
+    then return (IntVal Nothing) 
     else if ty == "bool"
-    then assignVar id (BoolVal Nothing)
+    then return (BoolVal Nothing)
     else throwError ("Unknown Type ")
 
 evalStatementList :: StatementList -> Interpreter ()
