@@ -100,15 +100,23 @@ checkDecleraton (DecProcedureDef (ProcedureDef pd blk)) = do
 checkProcedureHead :: ProcedureHead -> StaticChecker ()
 checkProcedureHead (ProcedureHead (Identifier id)) = return ()
 
-
 checkTypeDef :: [TypeDef] -> StaticChecker ()
 checkTypeDef [] = return ()
-checkTypeDef ((TypeDef (Identifier id) (TypeIdentifer (Identifier tid))):tds) = do
-    assignVar id (RefType tid)
-checkTypeDef ((TypeDef (Identifier id) (SubrangeType c1 c2)):tds) = do
+checkTypeDef ((TypeDef (Identifier id) ty):tds) = do
+    tid <- checkType ty
+    assignVar id tid
+    checkTypeDef tds
+
+checkType (ArrayType ty) = do
+    g <- checkType ty
+    return g
+checkType (SubrangeType c1 c2) = do
     let ec1 = getConst c1
     let ec2 = getConst c2
-    assignVar id (SubType ec1 ec2)
+    return (SubType ec1 ec2)
+checkType (TypeIdentifer (Identifier tid)) = do
+    return (RefType tid)
+
 
 getConst :: Constant -> Int
 getConst (ConstNumber (Number "-" num)) = fromIntegral (-num)
