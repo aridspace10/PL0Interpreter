@@ -116,6 +116,7 @@ checkType (SubrangeType c1 c2) = do
     return (SubType ec1 ec2)
 checkType (TypeIdentifer (Identifier tid)) = do
     return (RefType tid)
+checkType _ = throwError "Unknown Type Given"
 
 
 getConst :: Constant -> Int
@@ -169,6 +170,12 @@ checkStatement (Assignment ty lval cond) = do
             then return ()
             else throwError "Cannot Assign"
         _ -> throwError "IDK how"
+checkStatement (ArrayCreation lval ty const) = do
+    let e = getConst const
+    if (e < 0) then throwError "Negative Space Array can't exist"
+    else do
+        g <- checkType ty
+        return ()
 checkStatement (IfStatement cond stat1 stat2) = do
     checkCondition cond
     checkStatement stat1
