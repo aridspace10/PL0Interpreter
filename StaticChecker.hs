@@ -146,6 +146,9 @@ checkVarDef ((VarDecl (Identifier id) ty):vds) = do
                         "int" -> assignVar id IntType
                         "bool" -> assignVar id BoolType
                         _ -> assignVar id (RefType tid')
+        (ArrayType ty) -> do
+            g <- checkType ty
+            assignVar id g
     checkVarDef vds
 
 checkStatementList :: StatementList -> StaticChecker ()
