@@ -47,11 +47,21 @@ getAddress name = do
     case Map.lookup name (mapping vEnv) of
         Just address -> return address
 
+assignAddress :: String -> Address -> Interpreter ()
+assignAddress id address = do
+    env <- get
+    let vEnv = varEnv env
+    let newMapping = Map.insert id address (mapping vEnv)
+    let newVEnv = vEnv { mapping = newMapping}
+    put env { varEnv = newVEnv }
+
 accessMemory :: Int -> Interpreter Value
 accessMemory address = do
+    env <- get
+    let vEnv = varEnv env
     case memory vEnv V.!? address of
         Just val -> return val
-        Nothing -> throwError ("Variable '" ++ name ++ "' is uninitialized")
+        Nothing -> throwError "Unknown"
 
 assignMemory :: Int -> Value -> Interpreter ()
 assignMemory address val = do
@@ -232,7 +242,10 @@ evalStatement (ForStatement (ForHeader assign cond expr) stmt) = do
 evalStatement (ArrayCreation (LValue (Identifier id)) _ const) = do
     val <- lookupVar id
     space <- evalConstant const
-    address <- getAddress id
+    env <- get
+    let vEnv = varEnv env
+    let address = nextFree vEnv
+    assignAddress id address
     case (val, space) of
         (ty, IntVal (Just space')) -> assignArray ty space' address
 
@@ -329,7 +342,7 @@ evalLValue (ArrayAccess id const) = do
     c <- evalConstant
     initalAdd <- getAddress id
     case (c) of
-        (IntVal (Just val)) -> return $ accessMemory (initalAdd + c + 1)
+        (IntVal (Just val)) -> return $ accessMemory (initalAdd + c)
 
 emptyEnv :: Env
 emptyEnv = Env {
