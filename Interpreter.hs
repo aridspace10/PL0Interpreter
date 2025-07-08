@@ -157,7 +157,6 @@ evalVarDecList (VarDeclList (vd:vds)) = do
 evalVarDec :: VarDecl -> Interpreter ()
 evalVarDec (VarDecl (Identifier id) ty) = do
     e <- evalType ty
-    case (e) of
     assignVar id e
 
 evalType :: Type -> Interpreter Value
@@ -226,10 +225,10 @@ evalStatement (ForStatement (ForHeader assign cond expr) stmt) = do
         _ -> throwError "Assingment wasn't used"
 evalStatement (ArrayCreation (LValue (Identifier id)) _ const) = do
     val <- lookupVar id
-    let space = getConst const
-    let address = getAddress id
-    case val of
-        ty -> assignArray ty space address
+    space <- evalConstant const
+    address <- getAddress id
+    case (val, space) of
+        (ty, IntVal (Just space')) -> assignArray ty space' address
 
 assignArray :: Value -> Int -> Int -> Interpreter ()
 assignArray _ 0 _ = return ()
