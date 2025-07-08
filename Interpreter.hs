@@ -49,6 +49,8 @@ getAddress name = do
 
 assignMemory :: Int -> Value -> Interpreter ()
 assignMemory address val = do
+    env <- get
+    let vEnv = varEnv env
     let newMemory = memory vEnv V.// [(address, val)]
     let newVEnv = vEnv { memory = newMemory }
     put env { varEnv = newVEnv }
@@ -224,15 +226,15 @@ evalStatement (ForStatement (ForHeader assign cond expr) stmt) = do
 evalStatement (ArrayCreation (LValue (Identifier id)) _ const) = do
     val <- lookupVar id
     let space = getConst const
-    let addres = getAddress id
+    let address = getAddress id
     case val of
         ty -> assignArray ty space address
 
 assignArray :: Value -> Int -> Int -> Interpreter ()
 assignArray _ 0 _ = return ()
-assignArray type left address = do
-    assignMemory address type
-    assignArray type (left - 1) (address + 1)
+assignArray ty left address = do
+    assignMemory address ty
+    assignArray ty (left - 1) (address + 1)
 
 evalForLoop :: String -> Condition -> Exp -> Statement -> Interpreter ()
 evalForLoop id cond exp stmt = do
