@@ -157,12 +157,13 @@ evalVarDecList (VarDeclList (vd:vds)) = do
 evalVarDec :: VarDecl -> Interpreter ()
 evalVarDec (VarDecl (Identifier id) ty) = do
     e <- evalType ty
+    case (e) of
     assignVar id e
 
-evalType :: Type -> Interpreter Type
+evalType :: Type -> Interpreter Value
 evalType (ArrayType ty) = do
     g <- evalType ty
-    return (ArrayType g)
+    return (ArrayVal g)
 evalType (TypeIdentifer (Identifier ty)) = do
     if ty == "int" 
     then return (IntVal Nothing) 
