@@ -319,6 +319,11 @@ evalIdentifier (Identifier name) = lookupVar name
 
 evalLValue :: LValue -> Interpreter Value
 evalLValue (LValue x) = evalIdentifier x
+evalLValue (ArrayAccess id const) = do
+    c <- evalConstant
+    initalAdd <- getAddress id
+    case (c) of
+        (IntVal (Just val)) -> return $ getMemory (initalAdd + c + 1)
 
 emptyEnv :: Env
 emptyEnv = Env {
