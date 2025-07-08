@@ -40,6 +40,19 @@ data Value = IntVal (Maybe Int)
 
 type Interpreter a = StateT Env (ExceptT String IO) a
 
+getAddress :: String -> Interpreter Int
+getAddress name = do
+    env <- get
+    let vEnv = varEnv env
+    case Map.lookup name (mapping vEnv) of
+        Just address -> return address
+
+assignMemory :: Int -> Value -> Interpreter ()
+assignMemory address val = do
+    let newMemory = memory vEnv V.// [(address, val)]
+    let newVEnv = vEnv { memory = newMemory }
+    put env { varEnv = newVEnv }
+
 lookupVar :: String -> Interpreter Value
 lookupVar name = do
     env <- get
@@ -198,7 +211,6 @@ evalStatement (Assignment ty (LValue (Identifier id)) cond) = do
                     case ty of
                         "-" -> assignVar id (IntVal $ Just (lval - rval))
                         "+" -> assignVar id (IntVal $ Just (lval + rval))
-
 evalStatement (CallStatement (Identifier id)) = do
     pro <- lookupProc id
     evalBlock (body pro)
@@ -212,8 +224,15 @@ evalStatement (ForStatement (ForHeader assign cond expr) stmt) = do
 evalStatement (ArrayCreation (LValue (Identifier id)) _ const) = do
     val <- lookupVar id
     let space = getConst const
+    let addres = getAddress id
     case val of
-        ty -> assignArray ty space
+        ty -> assignArray ty space address
+
+assignArray :: Value -> Int -> Int -> Interpreter ()
+assignArray _ 0 _ = return ()
+assignArray type left address = do
+    assignMemory address type
+    assignArray type (left - 1) (address + 1)
 
 evalForLoop :: String -> Condition -> Exp -> Statement -> Interpreter ()
 evalForLoop id cond exp stmt = do
