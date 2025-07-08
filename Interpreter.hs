@@ -34,6 +34,7 @@ data Procedure = Procedure {
 
 data Value = IntVal (Maybe Int) 
             | BoolVal (Maybe Bool) 
+            | ArrayVal Value
             | NotUsed
             deriving (Show, Eq)
 
@@ -208,6 +209,11 @@ evalStatement (ForStatement (ForHeader assign cond expr) stmt) = do
     case assign of
         (Assignment _ (LValue (Identifier id)) _) -> evalForLoop id cond expr stmt
         _ -> throwError "Assingment wasn't used"
+evalStatement (ArrayCreation (LValue (Identifier id)) _ const) = do
+    val <- lookupVar id
+    let space = getConst const
+    case val of
+        ty -> assignArray ty space
 
 evalForLoop :: String -> Condition -> Exp -> Statement -> Interpreter ()
 evalForLoop id cond exp stmt = do
