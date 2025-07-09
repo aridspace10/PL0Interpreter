@@ -338,8 +338,8 @@ evalIdentifier (Identifier name) = lookupVar name
 
 evalLValue :: LValue -> Interpreter Value
 evalLValue (LValue x) = evalIdentifier x
-evalLValue (ArrayAccess id const) = do
-    c <- evalConstant
+evalLValue (ArrayAccess (Identifier id) const) = do
+    c <- evalConstant const
     initalAdd <- getAddress id
     case (c) of
         (IntVal (Just val)) -> return $ accessMemory (initalAdd + c)
