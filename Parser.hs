@@ -504,9 +504,9 @@ parseLValue :: Parser LValue
 parseLValue = do
     space
     id <- identifier
-    symbol lparen
+    symbol lbracket
     c <- parseConstant
-    symbol rparen
+    symbol rbracket
     return $ ArrayAccess id c
     <|> do
     space
