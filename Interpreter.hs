@@ -262,10 +262,14 @@ evalStatement (ArrayCreation (LValue (Identifier id)) _ const) = do
     let address = nextFree vEnv
     assignAddress id address
     case (val, space) of
-        (ty, IntVal (Just space')) -> assignArray ty space' address
+        (ty, IntVal (Just space')) -> do 
+            address <- assignArray ty space' address
+            let newVEnv = vEnv {nextFree = address }
+            put env { varEnv = newVEnv }
 evalStatement stuff = throwError (show stuff)
-assignArray :: Value -> Int -> Int -> Interpreter ()
-assignArray _ 0 _ = return ()
+
+assignArray :: Value -> Int -> Int -> Interpreter Int
+assignArray _ 0 add = return add
 assignArray ty left address = do
     assignMemory address ty
     assignArray ty (left - 1) (address + 1)
