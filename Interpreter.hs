@@ -342,7 +342,9 @@ evalLValue (ArrayAccess (Identifier id) const) = do
     c <- evalConstant const
     initalAdd <- getAddress id
     case (c) of
-        (IntVal (Just val)) -> return $ accessMemory (initalAdd + c)
+        (IntVal (Just val)) -> do
+            result <- accessMemory (initalAdd + val)
+            return result
 
 emptyEnv :: Env
 emptyEnv = Env {
