@@ -218,17 +218,32 @@ evalStatement (WhileStatement cond stat) = do
                     else return ()
                 _ -> return ()
         _ -> throwError ("Big Boy Problem")
-evalStatement (Assignment ty (LValue (Identifier id)) cond) = do
-    econd <- evalCondition cond  
-    case ty of
-        "" -> assignVar id econd
-        _ -> do
-            val <- lookupVar id
-            case (val, econd) of
-                (IntVal (Just lval), IntVal (Just rval)) -> do
-                    case ty of
-                        "-" -> assignVar id (IntVal $ Just (lval - rval))
-                        "+" -> assignVar id (IntVal $ Just (lval + rval))
+evalStatement (Assignment ty lval cond) = do
+    econd <- evalCondition cond
+    case lval of
+        (LValue (Identifier id)) -> do
+            case ty of
+                "" -> assignVar id econd
+                _ -> do
+                    val <- lookupVar id
+                    case (val, econd) of
+                        (IntVal (Just lval), IntVal (Just rval)) -> do
+                            case ty of
+                                "-" -> assignVar id (IntVal $ Just (lval - rval))
+                                "+" -> assignVar id (IntVal $ Just (lval + rval))
+        (ArrayAccess (Identifier id) const) -> do
+            a <- getAddress id
+            (IntVal (Just c)) <- evalConstant const
+            let address = a + c
+            case ty of
+                "" -> assignMemory address econd
+                _ -> do
+                    val <- accessMemory address
+                    case (val, econd) of
+                        (IntVal (Just lval), IntVal (Just rval)) -> do
+                            case ty of
+                                "-" -> assignMemory address (IntVal $ Just (lval - rval))
+                                "+" -> assignMemory address (IntVal $ Just (lval + rval))
 evalStatement (CallStatement (Identifier id)) = do
     pro <- lookupProc id
     evalBlock (body pro)
@@ -248,7 +263,7 @@ evalStatement (ArrayCreation (LValue (Identifier id)) _ const) = do
     assignAddress id address
     case (val, space) of
         (ty, IntVal (Just space')) -> assignArray ty space' address
-
+evalStatement stuff = throwError (show stuff)
 assignArray :: Value -> Int -> Int -> Interpreter ()
 assignArray _ 0 _ = return ()
 assignArray ty left address = do
