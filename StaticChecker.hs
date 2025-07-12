@@ -8,7 +8,11 @@ import GHC.Natural ( Natural )
 import Grammer
 
 data Error = Error Natural String
-data AssignedType = IntType | BoolType | RefType String | SubType Int Int deriving (Eq)
+data AssignedType = IntType 
+                    | BoolType 
+                    | RefType String 
+                    | SubType Int Int
+                    | ArrType AssignedType deriving (Show, Eq)
 data Scope = Scope SymTable [Error] Scope
 type SymTable = Map.Map String AssignedType
 type StaticChecker a = StateT Scope (ExceptT String IO) a
@@ -32,7 +36,8 @@ lookupType id = do
     case Map.lookup id symTable of
         Just IntType -> return IntType
         Just BoolType -> return BoolType
-        nothing -> throwError ("Undefined error " ++ id)
+        Just (ArrType ty) -> return $ ArrType ty
+        nothing -> throwError (show symTable)
 
 
 getUnresolvedTypes :: [(String , AssignedType)] -> [(String , AssignedType)] -> [(String , AssignedType)]
@@ -40,6 +45,7 @@ getUnresolvedTypes ys [] = ys
 getUnresolvedTypes ys (x:xs) = do
     case x of
         (_, RefType str) -> getUnresolvedTypes (ys ++ [x]) xs
+        (_, ArrType (RefType str)) -> getUnresolvedTypes (ys ++ [x]) xs
         _ -> getUnresolvedTypes ys xs
 
 resolveUnresolvedType :: [String] -> (String, AssignedType) -> StaticChecker ()
@@ -52,6 +58,7 @@ resolveUnresolvedType backlog x = do
                 case ty of
                     IntType -> assignVar id IntType
                     BoolType -> assignVar id BoolType
+                    ArrType g -> assignVar id (ArrType g)
                     RefType otherid -> resolveUnresolvedType (backlog ++ [id]) (str, RefType otherid)
 
 resolveUnresolvedTypes :: [(String, AssignedType)] -> StaticChecker ()
@@ -109,13 +116,16 @@ checkTypeDef ((TypeDef (Identifier id) ty):tds) = do
 
 checkType (ArrayType ty) = do
     g <- checkType ty
-    return g
+    return $ ArrType g
 checkType (SubrangeType c1 c2) = do
     let ec1 = getConst c1
     let ec2 = getConst c2
     return (SubType ec1 ec2)
 checkType (TypeIdentifer (Identifier tid)) = do
-    return (RefType tid)
+    case tid of
+        "int" -> return IntType
+        "bool" ->  return BoolType
+        _ -> return (RefType tid)
 checkType _ = throwError "Unknown Type Given"
 
 
@@ -149,7 +159,7 @@ checkVarDef ((VarDecl (Identifier id) ty):vds) = do
                         _ -> assignVar id (RefType tid')
         (ArrayType ty) -> do
             g <- checkType ty
-            assignVar id g
+            assignVar id (ArrType g)
     checkVarDef vds
 
 checkStatementList :: StatementList -> StaticChecker ()
@@ -168,7 +178,12 @@ checkStatement (Assignment ty lval cond) = do
             idType <- lookupType id
             if idType == condType
             then return ()
-            else throwError "Cannot Assign"
+            else throwError ("Cannot Assign " ++ (show condType) ++ " to " ++ (show idType))
+        (ArrayAccess (Identifier id) const) -> do
+            idType <- lookupType id
+            if idType == condType
+            then return ()
+            else throwError ("Cannot Assign " ++ (show condType) ++ " to " ++ (show idType))
         _ -> throwError "IDK how"
 checkStatement (ArrayCreation lval ty const) = do
     let e = getConst const
@@ -197,7 +212,7 @@ checkStatement (ForStatement header stmt) = do
 
 checkLValue :: LValue -> StaticChecker AssignedType
 checkLValue (LValue (Identifier id)) = lookupType id
-checkLValue (LValue (ArrayAccess (Identifier id) const)) = lookupType id
+checkLValue (ArrayAccess (Identifier id) const) = lookupType id
 
 checkCondition :: Condition -> StaticChecker AssignedType
 checkCondition (SimpleCondition exp) = checkExp exp
