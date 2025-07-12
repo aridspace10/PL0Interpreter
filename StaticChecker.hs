@@ -181,9 +181,11 @@ checkStatement (Assignment ty lval cond) = do
             else throwError ("Cannot Assign " ++ (show condType) ++ " to " ++ (show idType))
         (ArrayAccess (Identifier id) const) -> do
             idType <- lookupType id
-            if idType == condType
-            then return ()
-            else throwError ("Cannot Assign " ++ (show condType) ++ " to " ++ (show idType))
+            case (idType) of
+                (ArrType innerType) -> do
+                    if innerType == condType
+                    then return ()
+                    else throwError ("Cannot Assign " ++ (show condType) ++ " to " ++ (show idType))
         _ -> throwError "IDK how"
 checkStatement (ArrayCreation lval ty const) = do
     let e = getConst const
