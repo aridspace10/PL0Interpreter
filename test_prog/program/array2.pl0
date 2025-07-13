@@ -1,0 +1,10 @@
+var a: array(array(int));
+begin
+    a := new array(5);
+    a[0] := new array(4);
+    a[1] := new array(4);
+    a[0][1] := 1;
+    write a[0][1];
+    a[1] := [1,2,3,4];
+    write a[1]
+end
