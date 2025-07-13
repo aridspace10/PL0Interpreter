@@ -47,6 +47,7 @@ Assignment → LValue ASSIGN Condition
            | LValue PLUSEQUAL Condition 
            | LValue MINUSEQUALS Condition
            | kwNew TypeIdentifer lparen Constant rparen
+           | LBRACKET [ Condition ] { SemiColon Condition} RBRACKET
 
 CallStatement → KW CALL IDENTIFIER LPAREN RPAREN
 
@@ -70,5 +71,5 @@ Term → Factor {(TIMES | DIVIDE) Factor}
 
 Factor → LPAREN Condition RPAREN | NUMBER | LValue
 
-LValue → IDENTIFIER LBRACKET CONSTANT RBRACKET | IDENTIFIER
+LValue → IDENTIFIER {LBRACKET CONSTANT RBRACKET}
 
