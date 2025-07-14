@@ -29,6 +29,7 @@ data StatementList = ComplexStatement Statement StatementList | SimpleStatement 
 data Statement =
     Assignment String LValue Condition
     | ArrayCreation LValue Type Constant
+    | ArrayBuild [Condition]
     | CallStatement Identifier
     | ReadStatement LValue
     | WriteStatement Exp
@@ -63,6 +64,6 @@ data Factor =
     | FactorParen Condition
     deriving (Show)
 
-data LValue = ArrayAccess Identifier Constant | LValue Identifier deriving (Show)
+data LValue = LValue Identifier [Int] deriving (Show)
 data Identifier = Identifier String deriving (Show)
 data Number = Number String Natural deriving (Show)
