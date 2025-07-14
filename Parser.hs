@@ -301,6 +301,14 @@ parseAssignment = do
     <|> do
     lval <- parseLValue
     symbol assign
+    symbol lbracket
+    fcond <- parseCondition
+    rcond <- many parseConds
+    symbol rbracket
+    return (ArrayBuild (fcond : rcond))
+    <|> do
+    lval <- parseLValue
+    symbol assign
     cond <- parseCondition
     return (Assignment "" lval cond)
     <|> do
@@ -313,6 +321,10 @@ parseAssignment = do
     symbol kwMinusEquals
     cond <- parseCondition
     return (Assignment "-" lval cond)
+  where
+    parseConds = do
+        symbol colon
+        parseCondition 
 
 parseReadStatement :: Parser Statement
 parseReadStatement = do
