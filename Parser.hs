@@ -516,14 +516,14 @@ parseLValue :: Parser LValue
 parseLValue = do
     space
     id <- identifier
-    symbol lbracket
-    c <- parseConstant
-    symbol rbracket
-    return $ ArrayAccess id c
-    <|> do
-    space
-    id <- identifier
-    return (LValue id)
+    ops <- many parseOptionalAccesses
+    return $ LValue id ops
+  where
+    parseOptionalAccesses = do
+        symbol lbracket
+        c <- parseConstant
+        symbol rbracket
+        return c
 
 number :: Parser Natural
 number = do

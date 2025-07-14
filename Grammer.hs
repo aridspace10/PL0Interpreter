@@ -64,6 +64,6 @@ data Factor =
     | FactorParen Condition
     deriving (Show)
 
-data LValue = LValue Identifier [Int] deriving (Show)
+data LValue = LValue Identifier [Constant] deriving (Show)
 data Identifier = Identifier String deriving (Show)
 data Number = Number String Natural deriving (Show)
