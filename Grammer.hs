@@ -29,7 +29,7 @@ data StatementList = ComplexStatement Statement StatementList | SimpleStatement 
 data Statement =
     Assignment String LValue Condition
     | ArrayCreation LValue Type Constant
-    | ArrayBuild [Condition]
+    | ArrayBuild LValue [Condition]
     | CallStatement Identifier
     | ReadStatement LValue
     | WriteStatement Exp

@@ -305,7 +305,7 @@ parseAssignment = do
     fcond <- parseCondition
     rcond <- many parseConds
     symbol rbracket
-    return (ArrayBuild (fcond : rcond))
+    return (ArrayBuild lval (fcond : rcond))
     <|> do
     lval <- parseLValue
     symbol assign
