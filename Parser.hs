@@ -323,7 +323,7 @@ parseAssignment = do
     return (Assignment "-" lval cond)
   where
     parseConds = do
-        symbol colon
+        symbol ","
         parseCondition 
 
 parseReadStatement :: Parser Statement
