@@ -169,23 +169,23 @@ checkStatementList (ComplexStatement stat statLst) = do
     checkStatement stat
     checkStatementList statLst
 
+checkAccessing :: AssignedType -> [Constant] -> StaticChecker AssignedType
+checkAccessing (ArrType innerty) ([]) = throwError "Can't Assign Condition to Array"
+checkAccessing ty [] = return ty
+checkAccessing (ArrType innerty) (c:cs) = checkAccessing innerty cs
+checkAccessing (ty) (c:cs) = throwError "Int is not subscriptable"
+
 checkStatement :: Statement -> StaticChecker ()
 checkStatement (Assignment ty lval cond) = do
     checkLValue lval
     condType <- checkCondition cond
     case (lval) of
-        (LValue (Identifier id)) -> do
+        (LValue (Identifier id) const) -> do
             idType <- lookupType id
-            if idType == condType
+            ty <- checkAccessing idType const
+            if idType == ty
             then return ()
             else throwError ("Cannot Assign " ++ (show condType) ++ " to " ++ (show idType))
-        (ArrayAccess (Identifier id) const) -> do
-            idType <- lookupType id
-            case (idType) of
-                (ArrType innerType) -> do
-                    if innerType == condType
-                    then return ()
-                    else throwError ("Cannot Assign " ++ (show condType) ++ " to " ++ (show idType))
         _ -> throwError "IDK how"
 checkStatement (ArrayCreation lval ty const) = do
     let e = getConst const
@@ -211,6 +211,9 @@ checkStatement (CompoundStatement stmtList) = do
 checkStatement (CallStatement id) = return ()
 checkStatement (ForStatement header stmt) = do
     checkStatement stmt
+checkStatement (ArrayBuild lval constants) = do
+    ty <- checkLValue lval
+    return ()
 
 checkLValue :: LValue -> StaticChecker AssignedType
 checkLValue (LValue (Identifier id) consts) = lookupType id
