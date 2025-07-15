@@ -221,7 +221,7 @@ evalStatement (WhileStatement cond stat) = do
 evalStatement (Assignment ty lval cond) = do
     econd <- evalCondition cond
     case lval of
-        (LValue (Identifier id)) -> do
+        (LValue (Identifier id) []) -> do
             case ty of
                 "" -> assignVar id econd
                 _ -> do
@@ -231,7 +231,7 @@ evalStatement (Assignment ty lval cond) = do
                             case ty of
                                 "-" -> assignVar id (IntVal $ Just (lval - rval))
                                 "+" -> assignVar id (IntVal $ Just (lval + rval))
-        (ArrayAccess (Identifier id) const) -> do
+        (LValue (Identifier id) (const:[])) -> do
             a <- getAddress id
             (IntVal (Just c)) <- evalConstant const
             let address = a + c
@@ -252,9 +252,9 @@ evalStatement (CompoundStatement stmtList) = do
 evalStatement (ForStatement (ForHeader assign cond expr) stmt) = do
     evalStatement assign
     case assign of
-        (Assignment _ (LValue (Identifier id)) _) -> evalForLoop id cond expr stmt
+        (Assignment _ (LValue (Identifier id) _) _) -> evalForLoop id cond expr stmt
         _ -> throwError "Assingment wasn't used"
-evalStatement (ArrayCreation (LValue (Identifier id)) _ const) = do
+evalStatement (ArrayCreation (LValue (Identifier id) cs) _ const) = do
     val <- lookupVar id
     space <- evalConstant const
     env <- get
@@ -356,8 +356,8 @@ evalIdentifier :: Identifier -> Interpreter Value
 evalIdentifier (Identifier name) = lookupVar name
 
 evalLValue :: LValue -> Interpreter Value
-evalLValue (LValue x) = evalIdentifier x
-evalLValue (ArrayAccess (Identifier id) const) = do
+evalLValue (LValue id []) = evalIdentifier id
+evalLValue (LValue (Identifier id) (const: [])) = do
     c <- evalConstant const
     initalAdd <- getAddress id
     case (c) of
