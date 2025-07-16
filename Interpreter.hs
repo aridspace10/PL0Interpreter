@@ -256,16 +256,22 @@ evalStatement (ForStatement (ForHeader assign cond expr) stmt) = do
         _ -> throwError "Assingment wasn't used"
 evalStatement (ArrayCreation (LValue (Identifier id) cs) _ const) = do
     val <- lookupVar id
+    add <- getAddress id
+    assignMemory add NotUsed
     space <- evalConstant const
     env <- get
     let vEnv = varEnv env
     let address = nextFree vEnv
     assignAddress id address
+    env' <- get
+    let vEnv' = varEnv env'
     case (val, space) of
         (ty, IntVal (Just space')) -> do 
             address <- assignArray ty space' address
-            let newVEnv = vEnv {nextFree = address }
+            let newVEnv = vEnv' {nextFree = address }
             put env { varEnv = newVEnv }
+
+evalStatement (ArrayBuild (LValue (Identifier id) _) elems) = undefined
 evalStatement stuff = throwError (show stuff)
 
 assignArray :: Value -> Int -> Int -> Interpreter Int

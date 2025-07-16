@@ -1,8 +1,5 @@
-var
-  x: int;
+var a: array(int);
+    b: array(int);
 begin
-  x := 2+3;
-  write x;
-  x := x-1;
-  write x
+    a := new array(5)
 end
