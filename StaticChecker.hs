@@ -183,9 +183,9 @@ checkStatement (Assignment ty lval cond) = do
         (LValue (Identifier id) const) -> do
             idType <- lookupType id
             ty <- checkAccessing idType const
-            if idType == ty
+            if condType == ty
             then return ()
-            else throwError ("Cannot Assign " ++ (show condType) ++ " to " ++ (show idType))
+            else throwError ("Cannot Assign " ++ (show condType) ++ " to " ++ (show ty))
         _ -> throwError "IDK how"
 checkStatement (ArrayCreation lval ty const) = do
     let e = getConst const
