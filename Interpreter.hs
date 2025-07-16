@@ -262,13 +262,14 @@ evalStatement (ArrayCreation (LValue (Identifier id) cs) _ const) = do
     env <- get
     let vEnv = varEnv env
     let address = nextFree vEnv
-    assignAddress id address
-    env' <- get
-    let vEnv' = varEnv env'
     case (val, space) of
-        (ty, IntVal (Just space')) -> do 
-            address <- assignArray ty space' address
-            let newVEnv = vEnv' {nextFree = address }
+        (ArrayVal ty, IntVal (Just space')) -> do 
+            assignAddress id address
+            assignMemory address (ArrayVal (IntVal (Just space')))
+            address <- assignArray ty space' (address + 1)
+            env' <- get
+            let vEnv' = varEnv env'
+            let newVEnv = vEnv' {nextFree = address + 1 }
             put env { varEnv = newVEnv }
 
 evalStatement (ArrayBuild (LValue (Identifier id) _) elems) = undefined
