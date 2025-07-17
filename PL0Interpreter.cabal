@@ -5,29 +5,43 @@ author:              Jackson Van Duikeren
 maintainer:          youremail@example.com
 license:             MIT
 
+library
+  hs-source-dirs:      .
+  exposed-modules:
+      FileIO
+      Grammer
+      Interpreter
+      Parser
+      StaticChecker
+  build-depends:
+      base >=4.7 && <5,
+      vector >=0.12,
+      directory >=1.3.8.1,
+      mtl,
+      containers
+  default-language:    Haskell2010
+
 executable pl0-interpreter
   main-is:             Runner.hs
   hs-source-dirs:      .
-  build-depends:       base >=4.7 && <5,
-                       vector >=0.12,
-                       mtl,
-                       containers,
-                       directory >=1.3.8.1
-  other-modules:       FileIO
-                       Grammer
-                       Interpreter
-                       Parser
-                       StaticChecker
+  build-depends:
+      base >=4.7 && <5,
+      PL0Interpreter,
+      vector >=0.12,
+      directory >=1.3.8.1,
+      mtl,
+      containers
   default-language:    Haskell2010
 
 test-suite pl0-tests
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test_prog
   main-is:             Main.hs
-  build-depends:       base >=4.7 && <5,
-                       tasty >=1.4,
-                       tasty-hunit >=0.10,
-                       mtl,
-                       containers,
-                       PL0Interpreter
+  build-depends:
+      base >=4.7 && <5,
+      tasty >=1.4,
+      tasty-hunit >=0.10,
+      PL0Interpreter,
+      mtl,
+      containers
   default-language:    Haskell2010

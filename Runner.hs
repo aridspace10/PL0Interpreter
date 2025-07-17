@@ -1,10 +1,13 @@
-module Runner where
+module Main where
 
 import Parser
 import Interpreter
 import FileIO
 import StaticChecker (runStaticChecker, nullScope, checkProgram)
 import Grammer
+
+main :: IO ()
+main = run "test_prog/program/sample.pl0"  -- or any default/test file path
 
 run :: FilePath -> IO ()
 run path = do
