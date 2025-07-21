@@ -51,8 +51,14 @@ data Term =
 data RelOp = RelOp String deriving (Show)
 
 data Condition =
-    SimpleCondition Exp
-    | RelationalCondition Exp RelOp Exp
+    NotCondition Condition
+    | SimpleCondition RelationalCondition
+    | LogicCondition RelationalCondition String Condition
+    deriving Show
+
+data RelationalCondition = 
+    SimpleRelCondition Exp
+    | ComplexRelCondition Exp RelOp Exp
     deriving (Show)
 
 data Factor =
