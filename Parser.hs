@@ -461,13 +461,13 @@ parseRelOp = do
 parseLogOp :: Parser LogOp
 parseLogOp = do
     symbol "&&"
-    return (RelOp "&&")
+    return (LogOp "&&")
     <|> do
     symbol "||"
-    return (RelOp "||")
+    return (LogOp "||")
     <|> do
     symbol "^^"
-    return (RelOp "^^")
+    return (LogOp "^^")
 
 parseCondition :: Parser Condition
 parseCondition = do
@@ -482,6 +482,16 @@ parseCondition = do
     <|> do
     cond <- parseRelCondition 
     return (SimpleCondition cond)
+
+parseRelCondition :: Parser RelationalCondition
+parseRelCondition = do
+    left <- parseExp
+    op <- parseRelOp
+    right <- parseExp
+    return (ComplexRelCondition left op right)
+    <|> do
+    exp <- parseExp
+    return (SimpleRelCondition exp)
 
 
 parseFactor :: Parser Factor
