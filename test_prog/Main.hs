@@ -9,12 +9,19 @@ import Control.Monad (forM)
 
 
 main :: IO ()
-main = defaultMain tests
+main = do
+  testCases <- discoverTestCases "test/cases"
+  defaultMain $ testGroup "PL0 Interpreter Tests" testCases
 
-tests :: TestTree
-tests = testGroup "PL0 Tests"
-  [ testCase "Basic sanity check" $
-      2 + 2 @?= 4,
-    testCase "Basic sanity check" $
-      2 + 2 @?= 4
-  ]
+discoverTestCases :: FilePath -> IO [TestTree]
+discoverTestCases dir = do
+  caseDirs <- listDirectory dir
+  forM caseDirs $ \caseName -> do
+    let inputPath = dir </> caseName </> "input.txt"
+    let expectedPath = dir </> caseName </> "expected.txt"
+
+    expectedOutput <- readFile expectedPath
+
+    return $ testCase caseName $ do
+      (output, _) <- capture $ run inputPath
+      output @?= expectedOutput
