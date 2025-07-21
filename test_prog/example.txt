@@ -1,8 +1,5 @@
 var
   x: int;
 begin
-  x := 2+3;
-  write x;
-  x := x-1;
-  write x
+  write 5
 end
