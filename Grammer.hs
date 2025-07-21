@@ -49,11 +49,12 @@ data Term =
     deriving (Show)
 
 data RelOp = RelOp String deriving (Show)
+data LogOp = LogOp String deriving Show
 
 data Condition =
     NotCondition Condition
     | SimpleCondition RelationalCondition
-    | LogicCondition RelationalCondition String Condition
+    | LogicCondition RelationalCondition LogOp Condition
     deriving Show
 
 data RelationalCondition = 

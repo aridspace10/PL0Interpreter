@@ -471,13 +471,17 @@ parseLogOp = do
 
 parseCondition :: Parser Condition
 parseCondition = do
-    exp1 <- parseExp
-    op <- parseRelOp
-    exp2 <- parseExp
-    return (RelationalCondition exp1 op exp2)
+    symbol "!"
+    cond <- parseCondition
+    return (NotCondition cond)
     <|> do
-    exp <- parseExp
-    return (SimpleCondition exp)
+    left <- parseRelCondition 
+    op <- parseLogOp
+    right <- parseCondition
+    return (LogicCondition left op right)
+    <|> do
+    cond <- parseRelCondition 
+    return (SimpleCondition cond)
 
 
 parseFactor :: Parser Factor
