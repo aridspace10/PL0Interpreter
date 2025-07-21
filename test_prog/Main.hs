@@ -7,6 +7,7 @@ import System.Directory (listDirectory)
 import System.FilePath ((</>))
 import Control.Monad (forM)
 
+import AppRunner (run)
 
 main :: IO ()
 main = do
