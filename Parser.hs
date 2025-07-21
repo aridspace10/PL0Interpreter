@@ -458,6 +458,17 @@ parseRelOp = do
     symbol "!="
     return (RelOp "!=")
 
+parseLogOp :: Parser LogOp
+parseLogOp = do
+    symbol "&&"
+    return (RelOp "&&")
+    <|> do
+    symbol "||"
+    return (RelOp "||")
+    <|> do
+    symbol "^^"
+    return (RelOp "^^")
+
 parseCondition :: Parser Condition
 parseCondition = do
     exp1 <- parseExp
