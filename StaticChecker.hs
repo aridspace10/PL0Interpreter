@@ -100,7 +100,6 @@ checkDecleraton (DecProcedureDef (ProcedureDef pd blk)) = do
 checkProcedureHead :: ProcedureHead -> StaticChecker ()
 checkProcedureHead (ProcedureHead (Identifier id)) = return ()
 
-
 checkTypeDef :: [TypeDef] -> StaticChecker ()
 checkTypeDef [] = return ()
 checkTypeDef ((TypeDef (Identifier id) (TypeIdentifer (Identifier tid))):tds) = do
@@ -181,10 +180,11 @@ checkLValue :: LValue -> StaticChecker AssignedType
 checkLValue (LValue (Identifier id)) = lookupType id
 
 checkCondition :: Condition -> StaticChecker AssignedType
-checkCondition (SimpleCondition exp) = checkExp exp
-checkCondition (RelationalCondition lexp op rexp) = do
-    checkExp lexp
-    checkExp rexp
+checkCondition (NotCondition cond) = checkCondition cond
+checkCondition (SimpleCondition cond) = checkRelationCondition cond
+checkCondition (LogicCondition lcond op rcond) = do
+    checkRelationCondition lcond
+    checkRelationCondition rcond
     return BoolType
 
 checkExp :: Exp -> StaticChecker AssignedType
