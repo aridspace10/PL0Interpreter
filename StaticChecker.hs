@@ -177,7 +177,11 @@ checkStatement (ForStatement header stmt) = do
     checkStatement stmt
 
 checkLValue :: LValue -> StaticChecker AssignedType
-checkLValue (LValue (Identifier id)) = lookupType id
+checkLValue (LValue (Identifier id)) = 
+    case id of
+        "True" -> return BoolType
+        "False" -> return BoolType
+        _ -> lookupType id
 
 checkCondition :: Condition -> StaticChecker AssignedType
 checkCondition (NotCondition cond) = checkCondition cond
