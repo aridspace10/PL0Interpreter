@@ -218,8 +218,17 @@ evalForLoop id cond exp stmt = do
         _ -> throwError "Condition should evaluate to a bool Value"
 
 evalCondition :: Condition -> Interpreter Value
-evalCondition (SimpleCondition exp) = evalExp exp
-evalCondition (RelationalCondition lexp (RelOp op) rexp) = do
+evalCondition (NotCondition cond) = do
+    econd <- evalCondition cond 
+    case econd of 
+        (BoolVal (Just True)) -> return (BoolVal (Just False))
+        (BoolVal (Just False)) -> return (BoolVal (Just True))
+        (IntVal (Just 0)) -> return (IntVal (Just 1))
+        (IntVal (Just _)) -> return (IntVal (Just 0))
+
+evalRelationalCondition :: RelationalCondition -> Interpreter Value
+evalRelationalCondition (SimpleRelCondition exp) = evalExp exp
+evalRelationalCondition (ComplexRelCondition lexp (RelOp op) rexp) = do
   elexp <- evalExp lexp
   erexp <- evalExp rexp
   case (elexp, erexp) of
