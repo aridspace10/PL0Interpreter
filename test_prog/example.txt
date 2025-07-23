@@ -1,8 +1,6 @@
-var
-  x: int;
+var x: bool;
+    y: bool;
 begin
-  x := 2+3;
-  write x;
-  x := x-1;
+  if True && True then x := True else x := False;
   write x
 end
