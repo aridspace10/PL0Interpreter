@@ -272,7 +272,7 @@ evalExp (SingleExp str term) = do
                 if str == "-" 
                 then return (IntVal $ Just (-e))
                 else return (IntVal $ Just e)
-        (BoolVal e) -> throwError ("Big Bad Moment No.1")
+        (BoolVal e) -> return (BoolVal e)
 evalExp (BinaryExp str term exp) = do
     eval <- evalTerm term
     eexp <- evalExp exp
@@ -305,7 +305,11 @@ evalFactor (FactorNumber num) = return (IntVal $ Just $ fromIntegral num)
 evalFactor (FactorParen cond) = do evalCondition cond
 
 evalIdentifier :: Identifier -> Interpreter Value
-evalIdentifier (Identifier name) = lookupVar name
+evalIdentifier (Identifier name) = do
+    case name of
+        "True" -> return (BoolVal (Just True))
+        "False" -> return (BoolVal (Just False)) 
+        _ -> lookupVar name
 
 -- Eval lvalues
 evalLValue :: LValue -> Interpreter Value
