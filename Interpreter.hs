@@ -225,6 +225,22 @@ evalCondition (NotCondition cond) = do
         (BoolVal (Just False)) -> return (BoolVal (Just True))
         (IntVal (Just 0)) -> return (IntVal (Just 1))
         (IntVal (Just _)) -> return (IntVal (Just 0))
+evalCondition (SimpleCondition cond) = evalRelationalCondition LogicCondition
+evalCondition (LogicCondition lcond (LogOp op) rcond) = do
+    elcond <- evalRelationalCondition lcond
+    ercond <- evalRelationalCondition rcond 
+    case (elcond, ercond) of
+        (BoolVal (Just l), BoolVal (Just r)) -> case op of
+            "&&" -> case (l, r) of
+                (True, True)   -> return $ BoolVal (Just True)
+                _              -> return $ BoolVal (Just False)
+            "&&" -> case (l, r) of
+                (False, False) -> return $ BoolVal (Just False)
+                -              -> return $ BoolVal (Just True)
+            "^^" -> case (l, r) of
+                (True, False)  -> return $ BoolVal (Just True)
+                (False, True)  -> return $ BoolVal (Just True)
+                -              -> return $ BoolVal (Just False)
 
 evalRelationalCondition :: RelationalCondition -> Interpreter Value
 evalRelationalCondition (SimpleRelCondition exp) = evalExp exp
