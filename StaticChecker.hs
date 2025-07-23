@@ -184,7 +184,14 @@ checkCondition (NotCondition cond) = checkCondition cond
 checkCondition (SimpleCondition cond) = checkRelationCondition cond
 checkCondition (LogicCondition lcond op rcond) = do
     checkRelationCondition lcond
-    checkRelationCondition rcond
+    checkCondition rcond
+    return BoolType
+
+checkRelationCondition :: RelationalCondition -> StaticChecker AssignedType
+checkRelationCondition (SimpleRelCondition exp) = checkExp exp
+checkRelationCondition (ComplexRelCondition lexp op rexp) = do
+    checkExp lexp
+    checkExp rexp
     return BoolType
 
 checkExp :: Exp -> StaticChecker AssignedType
