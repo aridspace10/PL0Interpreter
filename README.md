@@ -59,7 +59,9 @@ WhileStatement → KW WHILE Condition KW DO Statement
 
 IfStatement → KW IF Condition KW THEN Statement KW ELSE Statement
 
-Condition → RelCondition
+Condition → NOT Condition | RelCondition [ LogOp Condition ] 
+
+LogOp → AND | OR | XOR
 
 RelCondition → Exp [ RelOp Exp ]
 

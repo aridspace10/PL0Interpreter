@@ -1,0 +1,10 @@
+var x: bool;
+    y: bool;
+begin
+  if True && True then x := True else x := False;
+  write x;
+  if x || False then y := True else y := False;
+  write y;
+  if x ^^ y then write False else write True;
+  if !x then write False else write True
+end

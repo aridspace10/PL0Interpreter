@@ -216,11 +216,23 @@ checkStatement (ArrayBuild lval constants) = do
     return ()
 
 checkLValue :: LValue -> StaticChecker AssignedType
-checkLValue (LValue (Identifier id) consts) = lookupType id
+checkLValue (LValue (Identifier id)) = 
+    case id of
+        "True" -> return BoolType
+        "False" -> return BoolType
+        _ -> lookupType id
 
 checkCondition :: Condition -> StaticChecker AssignedType
-checkCondition (SimpleCondition exp) = checkExp exp
-checkCondition (RelationalCondition lexp op rexp) = do
+checkCondition (NotCondition cond) = checkCondition cond
+checkCondition (SimpleCondition cond) = checkRelationCondition cond
+checkCondition (LogicCondition lcond op rcond) = do
+    checkRelationCondition lcond
+    checkCondition rcond
+    return BoolType
+
+checkRelationCondition :: RelationalCondition -> StaticChecker AssignedType
+checkRelationCondition (SimpleRelCondition exp) = checkExp exp
+checkRelationCondition (ComplexRelCondition lexp op rexp) = do
     checkExp lexp
     checkExp rexp
     return BoolType

@@ -298,8 +298,33 @@ evalForLoop id cond exp stmt = do
         _ -> throwError "Condition should evaluate to a bool Value"
 
 evalCondition :: Condition -> Interpreter Value
-evalCondition (SimpleCondition exp) = evalExp exp
-evalCondition (RelationalCondition lexp (RelOp op) rexp) = do
+evalCondition (NotCondition cond) = do
+    econd <- evalCondition cond 
+    case econd of 
+        (BoolVal (Just True)) -> return (BoolVal (Just False))
+        (BoolVal (Just False)) -> return (BoolVal (Just True))
+        (IntVal (Just 0)) -> return (IntVal (Just 1))
+        (IntVal (Just _)) -> return (IntVal (Just 0))
+evalCondition (SimpleCondition cond) = evalRelationalCondition cond
+evalCondition (LogicCondition lcond (LogOp op) rcond) = do
+    elcond <- evalRelationalCondition lcond
+    ercond <- evalCondition rcond 
+    case (elcond, ercond) of
+        (BoolVal (Just l), BoolVal (Just r)) -> case op of
+            "&&" -> case (l, r) of
+                (True, True)   -> return $ BoolVal (Just True)
+                _              -> return $ BoolVal (Just False)
+            "||" -> case (l, r) of
+                (False, False) -> return $ BoolVal (Just False)
+                _              -> return $ BoolVal (Just True)
+            "^^" -> case (l, r) of
+                (True, False)  -> return $ BoolVal (Just True)
+                (False, True)  -> return $ BoolVal (Just True)
+                _              -> return $ BoolVal (Just False)
+
+evalRelationalCondition :: RelationalCondition -> Interpreter Value
+evalRelationalCondition (SimpleRelCondition exp) = evalExp exp
+evalRelationalCondition (ComplexRelCondition lexp (RelOp op) rexp) = do
   elexp <- evalExp lexp
   erexp <- evalExp rexp
   case (elexp, erexp) of
@@ -327,7 +352,7 @@ evalExp (SingleExp str term) = do
                 if str == "-" 
                 then return (IntVal $ Just (-e))
                 else return (IntVal $ Just e)
-        (BoolVal e) -> throwError ("Big Bad Moment No.1")
+        (BoolVal e) -> return (BoolVal e)
 evalExp (BinaryExp str term exp) = do
     eval <- evalTerm term
     eexp <- evalExp exp
@@ -360,7 +385,11 @@ evalFactor (FactorNumber num) = return (IntVal $ Just $ fromIntegral num)
 evalFactor (FactorParen cond) = do evalCondition cond
 
 evalIdentifier :: Identifier -> Interpreter Value
-evalIdentifier (Identifier name) = lookupVar name
+evalIdentifier (Identifier name) = do
+    case name of
+        "True" -> return (BoolVal (Just True))
+        "False" -> return (BoolVal (Just False)) 
+        _ -> lookupVar name
 
 evalLValue :: LValue -> Interpreter Value
 evalLValue (LValue id []) = evalIdentifier id
