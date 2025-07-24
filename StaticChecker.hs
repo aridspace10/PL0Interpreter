@@ -216,7 +216,7 @@ checkStatement (ArrayBuild lval constants) = do
     return ()
 
 checkLValue :: LValue -> StaticChecker AssignedType
-checkLValue (LValue (Identifier id)) = 
+checkLValue (LValue (Identifier id) consts) = 
     case id of
         "True" -> return BoolType
         "False" -> return BoolType
