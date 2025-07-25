@@ -71,7 +71,12 @@ Exp → [PLUS | MINUS] Term {(PLUS | MINUS) Term}
 
 Term → Factor {(TIMES | DIVIDE) Factor}
 
-Factor → LPAREN Condition RPAREN | NUMBER | LValue
+Factor → LPAREN Condition RPAREN 
+        | NUMBER 
+        | LValue
+        | ArrayLiteral
+
+ArrayLiteral  → LBRACKET [ Exp { COMMA Exp } ] RBRACKET
 
 LValue → IDENTIFIER {LBRACKET CONSTANT RBRACKET}
 
