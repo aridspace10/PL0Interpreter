@@ -1,4 +1,6 @@
 {-# OPTIONS_GHC -Wno-overlapping-patterns #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Eta reduce" #-}
 module StaticChecker where
 import Parser
 import Control.Monad.State
@@ -211,9 +213,6 @@ checkStatement (CompoundStatement stmtList) = do
 checkStatement (CallStatement id) = return ()
 checkStatement (ForStatement header stmt) = do
     checkStatement stmt
-checkStatement (ArrayBuild lval constants) = do
-    ty <- checkLValue lval
-    return ()
 
 checkLValue :: LValue -> StaticChecker AssignedType
 checkLValue (LValue (Identifier id) consts) = 
@@ -252,6 +251,17 @@ checkFactor :: Factor -> StaticChecker AssignedType
 checkFactor (FactorNumber _) = return IntType
 checkFactor (FactorLValue lval) = checkLValue lval
 checkFactor (FactorParen cond) = checkCondition cond
+checkFactor (ArrayLiteral (exp: exps)) = do
+    ty <- checkExp exp
+    checkArray exps ty
+
+checkArray :: [Exp] -> AssignedType -> StaticChecker AssignedType
+checkArray [] ty = return ty
+checkArray (exp : exps) ty = do
+    e <- checkExp exp
+    if e == ty
+    then checkArray exps ty
+    else throwError "Array is not all of one type"
 
 nullScope :: Scope
 nullScope = Scope Map.empty [] nullScope 
