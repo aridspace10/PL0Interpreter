@@ -32,9 +32,9 @@ data Procedure = Procedure {
   body       :: Block
 } deriving (Show)
 
-data Value = IntVal (Maybe Int) 
-            | BoolVal (Maybe Bool) 
-            | ArrayVal Value
+data Value = IntVal (Maybe Int)
+            | BoolVal (Maybe Bool)
+            | ArrayVal [Value]
             | NotUsed
             deriving (Show, Eq)
 
@@ -180,8 +180,8 @@ evalType (ArrayType ty) = do
     g <- evalType ty
     return (ArrayVal g)
 evalType (TypeIdentifer (Identifier ty)) = do
-    if ty == "int" 
-    then return (IntVal Nothing) 
+    if ty == "int"
+    then return (IntVal Nothing)
     else if ty == "bool"
     then return (BoolVal Nothing)
     else throwError ("Unknown Type ")
@@ -271,7 +271,6 @@ evalStatement (ArrayCreation (LValue (Identifier id) cs) _ const) = do
             let vEnv' = varEnv env'
             let newVEnv = vEnv' {nextFree = address + 1 }
             put env { varEnv = newVEnv }
-evalStatement (ArrayBuild (LValue (Identifier id) _) elems) = undefined
 evalStatement stuff = throwError (show stuff)
 
 arrayBuild _ [] = return ()
@@ -386,7 +385,8 @@ evalTerm (BinaryTerm fact op term) = do
 evalFactor :: Factor -> Interpreter Value
 evalFactor (FactorLValue lval) = evalLValue lval
 evalFactor (FactorNumber num) = return (IntVal $ Just $ fromIntegral num)
-evalFactor (FactorParen cond) = do evalCondition cond
+evalFactor (FactorParen cond) = evalCondition cond
+evalFactor (ArrayLiteral exps) = foldl (\ lst exp -> lst : (evalExp exp)) lst exps
 
 evalIdentifier :: Identifier -> Interpreter Value
 evalIdentifier (Identifier name) = do
