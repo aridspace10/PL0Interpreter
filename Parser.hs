@@ -301,14 +301,6 @@ parseAssignment = do
     <|> do
     lval <- parseLValue
     symbol assign
-    symbol lbracket
-    fcond <- parseCondition
-    rcond <- many parseConds
-    symbol rbracket
-    return (ArrayBuild lval (fcond : rcond))
-    <|> do
-    lval <- parseLValue
-    symbol assign
     cond <- parseCondition
     return (Assignment "" lval cond)
     <|> do
@@ -536,6 +528,16 @@ parseFactor =
         cond <- parseCondition
         symbol rparen
         return (FactorParen cond)
+    <|> do
+        symbol lbracket
+        fcond <- parseExp
+        rcond <- many parseManyExp
+        symbol rbracket
+        return (ArrayLiteral (fcond : rcond))
+    where
+        parseManyExp = do
+            symbol ","
+            parseExp
 
 parseLValue :: Parser LValue
 parseLValue = do
