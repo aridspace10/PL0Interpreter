@@ -34,7 +34,8 @@ data Procedure = Procedure {
 
 data Value = IntVal (Maybe Int)
             | BoolVal (Maybe Bool)
-            | ArrayVal [Value]
+            | ArrayContent [Value]
+            | ArrayVal Value
             | NotUsed
             deriving (Show, Eq)
 
@@ -386,7 +387,7 @@ evalFactor :: Factor -> Interpreter Value
 evalFactor (FactorLValue lval) = evalLValue lval
 evalFactor (FactorNumber num) = return (IntVal $ Just $ fromIntegral num)
 evalFactor (FactorParen cond) = evalCondition cond
-evalFactor (ArrayLiteral exps) = foldl (\ lst exp -> lst : (evalExp exp)) lst exps
+evalFactor (ArrayLiteral exps) = return (ArrayContent (foldl (\ lst exp -> lst : (evalExp exp)) lst exps))
 
 evalIdentifier :: Identifier -> Interpreter Value
 evalIdentifier (Identifier name) = do
