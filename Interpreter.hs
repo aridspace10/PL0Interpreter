@@ -271,9 +271,13 @@ evalStatement (ArrayCreation (LValue (Identifier id) cs) _ const) = do
             let vEnv' = varEnv env'
             let newVEnv = vEnv' {nextFree = address + 1 }
             put env { varEnv = newVEnv }
-
 evalStatement (ArrayBuild (LValue (Identifier id) _) elems) = undefined
 evalStatement stuff = throwError (show stuff)
+
+arrayBuild _ [] = return ()
+arrayBuild address (elem:elems) = do
+    assignMemory address elem
+    arrayBuild (address + 1) elems
 
 assignArray :: Value -> Int -> Int -> Interpreter Int
 assignArray _ 0 add = return add
