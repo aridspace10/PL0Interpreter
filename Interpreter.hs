@@ -195,12 +195,36 @@ evalStatementList (ComplexStatement stmt stmtList) = do
     evalStatementList stmtList
 evalStatementList (SimpleStatement stmt) = evalStatement stmt
 
+print' :: Value -> Exp -> Interpreter ()
+print' (IntVal Nothing) _ = liftIO $ putStr ("null")
+print' (BoolVal Nothing) _ = liftIO $ putStr ("null")
+print' (IntVal (Just v)) Empty = liftIO $ putStr (show v)
+print' (BoolVal (Just v)) Empty = liftIO $ putStr (show v)
+print' (IntVal (Just v)) _ = liftIO $ print v
+print' (BoolVal (Just v)) _ = liftIO $ print v
+print' (ArrayVal (IntVal (Just space))) (SingleExp "" (SingleFactor (FactorLValue (LValue (Identifier id) [])))) = do
+    liftIO $ putStr "["
+    address <- getAddress id
+    printArray (address + 1) space 
+    where 
+        printArray _ 0 = liftIO $ putStr "]"
+        printArray address 1 = do
+            temp <- accessMemory address
+            print' temp Empty
+            liftIO $ putStrLn "]"
+            return ()
+        printArray address space = do
+            temp <- accessMemory address
+            print' temp Empty
+            liftIO $ putStr ","
+            printArray (address + 1) (space - 1)
+print' v _ = throwError (show v)
+
 evalStatement :: Statement -> Interpreter ()
 evalStatement (WriteStatement exp) = do
     val <- evalExp exp
-    case (val) of
-        (IntVal (Just v)) -> liftIO $ print v
-        (BoolVal (Just v)) -> liftIO $ print v
+    print' val exp
+
 evalStatement (IfStatement cond stat1 stat2) = do
     val <- evalCondition cond
     case (val) of
@@ -371,6 +395,8 @@ evalExp (SingleExp str term) = do
                 then return (IntVal $ Just (-e))
                 else return (IntVal $ Just e)
         (BoolVal e) -> return (BoolVal e)
+        (ArrayContent e) -> return (ArrayContent e)
+        (ArrayVal e) -> return (ArrayVal e)
 evalExp (BinaryExp str term exp) = do
     eval <- evalTerm term
     eexp <- evalExp exp
