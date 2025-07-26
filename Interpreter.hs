@@ -228,8 +228,16 @@ evalStatement (Assignment ty lval cond) = do
             case ty of
                 "" -> do
                     case econd of
-                        -- (ArrayContent values) -> do
-                        --     val <- lookupVar id
+                        (ArrayContent values) -> do
+                            val <- lookupVar id
+                            case val of
+                                Undefined -> throwError (id ++ " is not defined")
+                                Uninitialized -> throwError (id ++ " is not initalized to a certain size")
+                                (ArrayVal (IntVal (Just size))) -> case (size < (length values)) of
+                                    (True) -> throwError (id ++ " is of set size " ++ show size ++ ", however given array is of size " ++ show (length values))
+                                    (False) -> do
+                                        address <- getAddress id
+                                        arrayBuild (address + 1) values
                         _ -> assignVar id econd
                 _ -> do
                     val <- lookupVar id
