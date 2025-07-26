@@ -182,7 +182,6 @@ checkStatement :: Statement -> StaticChecker ()
 checkStatement (Assignment ty lval cond) = do
     checkLValue lval
     condType <- checkCondition cond
-    liftIO $ print condType
     case (lval) of
         (LValue (Identifier id) const) -> do
             idType <- lookupType id
