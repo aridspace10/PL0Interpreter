@@ -33,7 +33,9 @@ data Procedure = Procedure {
 } deriving (Show)
 
 data Value = IntVal (Maybe Int) 
-            | BoolVal (Maybe Bool) 
+            | BoolVal (Maybe Bool)
+            | Uninitialized
+            | Undefined 
             | NotUsed
             deriving (Show, Eq)
 
@@ -46,8 +48,8 @@ lookupVar name = do
     case Map.lookup name (mapping vEnv) of
         Just address -> case memory vEnv V.!? address of
             Just val -> return val
-            Nothing -> throwError ("Variable '" ++ name ++ "' is uninitialized")
-        Nothing  -> throwError ("Undefined variable: " ++ name)
+            Nothing -> return Uninitialized
+        Nothing  -> return Undefined
 
 assignVar :: String -> Value -> Interpreter ()
 assignVar name val = do
