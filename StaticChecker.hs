@@ -172,7 +172,8 @@ checkStatementList (ComplexStatement stat statLst) = do
     checkStatementList statLst
 
 checkAccessing :: AssignedType -> [Constant] -> StaticChecker AssignedType
-checkAccessing (ArrType innerty) ([]) = throwError "Can't Assign Condition to Array"
+checkAccessing (ArrType (ArrType (innerty))) [] = throwError "Cannot assign Condition to array"
+checkAccessing (ArrType ty) [] = return (ArrType ty)
 checkAccessing ty [] = return ty
 checkAccessing (ArrType innerty) (c:cs) = checkAccessing innerty cs
 checkAccessing (ty) (c:cs) = throwError "Int is not subscriptable"
@@ -181,13 +182,14 @@ checkStatement :: Statement -> StaticChecker ()
 checkStatement (Assignment ty lval cond) = do
     checkLValue lval
     condType <- checkCondition cond
+    liftIO $ print condType
     case (lval) of
         (LValue (Identifier id) const) -> do
             idType <- lookupType id
-            ty <- checkAccessing idType const
-            if condType == ty
+            targetTy <- checkAccessing idType const
+            if condType == targetTy
             then return ()
-            else throwError ("Cannot Assign " ++ (show condType) ++ " to " ++ (show ty))
+            else throwError ("Cannot Assign " ++ (show condType) ++ " to " ++ (show targetTy))
         _ -> throwError "IDK how"
 checkStatement (ArrayCreation lval ty const) = do
     let e = getConst const
@@ -256,7 +258,7 @@ checkFactor (ArrayLiteral (exp: exps)) = do
     checkArray exps ty
 
 checkArray :: [Exp] -> AssignedType -> StaticChecker AssignedType
-checkArray [] ty = return ty
+checkArray [] ty = return (ArrType ty)
 checkArray (exp : exps) ty = do
     e <- checkExp exp
     if e == ty
