@@ -224,7 +224,11 @@ evalStatement (Assignment ty lval cond) = do
     case lval of
         (LValue (Identifier id) []) -> do
             case ty of
-                "" -> assignVar id econd
+                "" -> do
+                    case econd of
+                        -- (ArrayContent values) -> do
+                        --     val <- lookupVar id
+                        _ -> assignVar id econd
                 _ -> do
                     val <- lookupVar id
                     case (val, econd) of
@@ -235,7 +239,7 @@ evalStatement (Assignment ty lval cond) = do
         (LValue (Identifier id) (const:[])) -> do
             a <- getAddress id
             (IntVal (Just c)) <- evalConstant const
-            let address = a + c
+            let address = a + c + 1
             case ty of
                 "" -> assignMemory address econd
                 _ -> do
@@ -387,7 +391,9 @@ evalFactor :: Factor -> Interpreter Value
 evalFactor (FactorLValue lval) = evalLValue lval
 evalFactor (FactorNumber num) = return (IntVal $ Just $ fromIntegral num)
 evalFactor (FactorParen cond) = evalCondition cond
-evalFactor (ArrayLiteral exps) = return (ArrayContent (foldl (\ lst exp -> lst : (evalExp exp)) lst exps))
+evalFactor (ArrayLiteral exps) = do
+    values <- mapM evalExp exps  -- [Exp] -> Interpreter [Value]
+    return $ ArrayContent values
 
 evalIdentifier :: Identifier -> Interpreter Value
 evalIdentifier (Identifier name) = do
@@ -403,7 +409,7 @@ evalLValue (LValue (Identifier id) (const: [])) = do
     initalAdd <- getAddress id
     case (c) of
         (IntVal (Just val)) -> do
-            result <- accessMemory (initalAdd + val)
+            result <- accessMemory (initalAdd + val + 1)
             return result
 
 emptyEnv :: Env
