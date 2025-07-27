@@ -76,13 +76,8 @@ assignMemory address val = do
 
 lookupVar :: String -> Interpreter Value
 lookupVar name = do
-    env <- get
-    let vEnv = varEnv env
-    case Map.lookup name (mapping vEnv) of
-        Just address -> case memory vEnv V.!? address of
-            Just val -> return val
-            Nothing -> return Uninitialized
-        Nothing  -> return Undefined
+    address <- getAddress name
+    return $ accessMemory address
 
 assignVar :: String -> Value -> Interpreter ()
 assignVar name val = do
