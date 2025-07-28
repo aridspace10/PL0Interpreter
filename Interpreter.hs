@@ -440,8 +440,7 @@ evalLValue (LValue (Identifier id) (const: [])) = do
     initalAdd <- getAddress id
     case (c) of
         (IntVal (Just val)) -> do
-            result <- accessMemory (initalAdd + val + 1)
-            return result
+            accessMemory (initalAdd + val + 1)
 
 emptyEnv :: Env
 emptyEnv = Env {
