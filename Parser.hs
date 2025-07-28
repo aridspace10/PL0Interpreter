@@ -281,7 +281,6 @@ parseParametersList = do
             symbol ","
             parseParameter
 
-
 parseParameter :: Parser Parameter
 parseParameter = do
     id <- identifier
@@ -340,8 +339,19 @@ parseCallStatement = do
     symbol kwCall
     ident <- identifier
     symbol lparen
+    lst <- parseCallParamList
     symbol rparen
-    return (CallStatement ident)
+    return (CallStatement ident lst)
+
+parseCallParamList :: Parser CallParamList
+parseCallParamList = do
+    first <- identifier 
+    rest <- many parseIdentifiers
+    return (CallParamList (first : rest))
+    where
+        parseIdentifiers = do
+            symbol ","
+            identifier
 
 parseWhileStatement :: Parser Statement
 parseWhileStatement = do
