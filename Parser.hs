@@ -345,15 +345,15 @@ parseCallStatement = do
 
 parseCallParamList :: Parser CallParamList
 parseCallParamList = do
-    first <- identifier 
-    rest <- many parseIdentifiers
+    first <- parseCondition
+    rest <- many parseCondition
     return (CallParamList (first : rest))
     <|> do
     return (CallParamList [])
     where
-        parseIdentifiers = do
+        parseConditons = do
             symbol ","
-            identifier
+            parseCondition
 
 
 parseWhileStatement :: Parser Statement

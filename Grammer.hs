@@ -39,7 +39,7 @@ data Statement =
     | ForStatement ForHeader Statement
     | CompoundStatement StatementList deriving Show
 
-data CallParamList = CallParamList [Identifier] deriving Show
+data CallParamList = CallParamList [Condition] deriving Show
 
 data ForHeader = ForHeader Statement Condition Exp deriving Show
 
