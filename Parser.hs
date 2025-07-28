@@ -265,8 +265,29 @@ parseProcedureHead = do
     symbol kwProcedure
     id <- identifier
     symbol lparen
+    lst <- parseParametersList
     symbol rparen
-    return (ProcedureHead id)
+    return (ProcedureHead id lst)
+
+parseParametersList :: Parser ParametersList
+parseParametersList = do
+    first <- parseParameter
+    rest <- many parseParams
+    return (ParametersList (first : rest))
+    <|> do
+    return (ParametersList [])
+    where 
+        parseParams = do
+            symbol ","
+            parseParameter
+
+
+parseParameter :: Parser Parameter
+parseParameter = do
+    id <- identifier
+    symbol colon
+    ty <- parseType
+    return (Parameter id ty)
 
 parseIfStatement :: Parser Statement
 parseIfStatement = do
