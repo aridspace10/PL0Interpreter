@@ -77,7 +77,7 @@ assignMemory address val = do
 lookupVar :: String -> Interpreter Value
 lookupVar name = do
     address <- getAddress name
-    return $ accessMemory address
+    accessMemory address
 
 assignVar :: String -> Value -> Interpreter ()
 assignVar name val = do
@@ -439,8 +439,7 @@ evalLValue (LValue (Identifier id) (const: [])) = do
     c <- evalConstant const
     initalAdd <- getAddress id
     case (c) of
-        (IntVal (Just val)) -> do
-            accessMemory (initalAdd + val + 1)
+        (IntVal (Just val)) -> accessMemory (initalAdd + val + 1)
 
 emptyEnv :: Env
 emptyEnv = Env {
