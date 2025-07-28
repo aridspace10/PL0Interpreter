@@ -81,41 +81,33 @@ instance Alternative Parser where
           Nothing -> parse q cs
           mx      -> mx
 
--- aux function for removing decorator
 parse :: Parser a -> String -> Maybe (a, String)
 parse (P p) cs = p cs
 
--- parse one character
 item :: Parser Char
 item = P $ foo
   where
     foo (c:cs) = Just $ (c, cs)
     foo _      = Nothing
 
--- parse a char c when P c.
 sat :: (Char -> Bool) -> Parser Char
 sat p = do
     x <- item
     if p x then return x else empty
 
--- parse a digit
 parseDigit :: Parser Char
 parseDigit = sat (\x -> elem x ['0'..'9'])
 
--- parse the character x
 char :: Char -> Parser Char
 char x = sat (== x)
 
--- parse the string xs
 string :: String -> Parser String
 string []     = return []
 string (x:xs) = (\x xs -> x:xs) <$> (char x) <*> (string xs)
 
--- parse a natural number
 nat :: Parser Natural
 nat = read <$> (some parseDigit)
 
--- throw away space
 space :: Parser ()
 space = (\x -> ()) <$> (many $ char ' ')
 
@@ -125,7 +117,6 @@ parseOptionalsString opts =
   where
     tryString s = string s
 
--- ignore surrounding whitespace
 token :: Parser a -> Parser a
 token pa = do
     space
@@ -133,7 +124,6 @@ token pa = do
     space
     return a
 
--- parse a symbol, ignoring whitespace
 symbol :: String -> Parser String
 symbol xs = token $ string xs
 
