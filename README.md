@@ -30,8 +30,12 @@ VarDecl → IDENTIFIER COLON TypeIdentifier SEMICOLON
 
 ProcedureDef → ProcedureHead EQUALS Block SEMICOLON
 
-ProcedureHead → KW PROCEDURE IDENTIFIER LPAREN RPAREN
+ProcedureHead → KW PROCEDURE IDENTIFIER LPAREN ParametersList RPAREN
 
+ParametersList → [Parameter] { SEMICOLON Parameter}
+
+Parameter → IDENTIFIER COLON Type
+ 
 CompoundStatement → KW BEGIN StatementList KW END
 
 StatementList → Statement {SEMICOLON Statement}
@@ -49,7 +53,9 @@ Assignment → LValue ASSIGN Condition
            | kwNew TypeIdentifer lparen Constant rparen
            | LBRACKET [ Condition ] { SemiColon Condition} RBRACKET
 
-CallStatement → KW CALL IDENTIFIER LPAREN RPAREN
+CallStatement → KW CALL IDENTIFIER LPAREN CallParamList RPAREN
+
+CallParamList → [Condition] {SEMICOLON Condition}
 
 ReadStatement → KW READ LValue
 
