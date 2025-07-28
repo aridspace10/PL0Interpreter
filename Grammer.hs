@@ -24,18 +24,22 @@ data Type =
 data VarDeclList = VarDeclList [VarDecl] deriving (Show)
 data VarDecl = VarDecl Identifier Type deriving (Show)
 data ProcedureDef = ProcedureDef ProcedureHead Block deriving (Show)
-data ProcedureHead = ProcedureHead Identifier deriving Show
+data ProcedureHead = ProcedureHead Identifier ParametersList deriving Show
+data ParametersList = ParametersList [Parameter] deriving Show
+data Parameter = Parameter Identifier Type deriving Show
 data StatementList = ComplexStatement Statement StatementList | SimpleStatement Statement | EmptyStatement deriving Show
 data Statement =
     Assignment String LValue Condition
     | ArrayCreation LValue Type Constant
-    | CallStatement Identifier
+    | CallStatement Identifier CallParamList
     | ReadStatement LValue
     | WriteStatement Exp
     | WhileStatement Condition Statement
     | IfStatement Condition Statement Statement
     | ForStatement ForHeader Statement
     | CompoundStatement StatementList deriving Show
+
+data CallParamList = CallParamList [Identifier] deriving Show
 
 data ForHeader = ForHeader Statement Condition Exp deriving Show
 
