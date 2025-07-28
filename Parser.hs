@@ -348,10 +348,13 @@ parseCallParamList = do
     first <- identifier 
     rest <- many parseIdentifiers
     return (CallParamList (first : rest))
+    <|> do
+    return (CallParamList [])
     where
         parseIdentifiers = do
             symbol ","
             identifier
+
 
 parseWhileStatement :: Parser Statement
 parseWhileStatement = do
