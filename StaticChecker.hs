@@ -107,7 +107,7 @@ checkDecleraton (DecProcedureDef (ProcedureDef pd blk)) = do
     checkBlock blk
 
 checkProcedureHead :: ProcedureHead -> StaticChecker ()
-checkProcedureHead (ProcedureHead (Identifier id)) = return ()
+checkProcedureHead (ProcedureHead (Identifier id) params) = return ()
 
 checkTypeDef :: [TypeDef] -> StaticChecker ()
 checkTypeDef [] = return ()
@@ -211,7 +211,7 @@ checkStatement (WhileStatement cond stat) = do
     checkStatement stat
 checkStatement (CompoundStatement stmtList) = do
     checkStatementList stmtList
-checkStatement (CallStatement id) = return ()
+checkStatement (CallStatement id params) = return ()
 checkStatement (ForStatement header stmt) = do
     checkStatement stmt
 

@@ -289,9 +289,11 @@ evalStatement (Assignment ty lval cond) = do
                             case ty of
                                 "-" -> assignMemory address (IntVal $ Just (lval - rval))
                                 "+" -> assignMemory address (IntVal $ Just (lval + rval))
-evalStatement (CallStatement (Identifier id)) = do
+evalStatement (CallStatement (Identifier id) params) = do
     pro <- lookupProc id
+    assignParams params
     evalBlock (body pro)
+    unassignParams params
 evalStatement (CompoundStatement stmtList) = do
     evalStatementList stmtList
 evalStatement (ForStatement (ForHeader assign cond expr) stmt) = do
