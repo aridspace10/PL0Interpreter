@@ -9,11 +9,13 @@ import Control.Monad.Except
 import qualified Data.Map as Map
 import qualified Data.Vector as V
 import Grammer
+import Grammer (ParametersList(ParametersList))
 
 type Address       = Int
 type MemoryMapping = Map.Map String Address
 type Memory        = V.Vector Value
 type ProcEnv       = Map.Map String Procedure
+type Params        = [(String, Value)] -- Maps id to type
 
 data VarEnv = VarEnv {
     mapping :: MemoryMapping,
@@ -28,7 +30,7 @@ data Env = Env {
 
 data Procedure = Procedure {
   procName   :: String,
-  parameters :: [String],
+  parameters :: Params,
   body       :: Block
 } deriving (Show)
 
@@ -135,12 +137,21 @@ evalDeclaration (DecProcedureDef pd) = evalProcedureDef pd
 evalProcedureDef :: ProcedureDef -> Interpreter ()
 evalProcedureDef (ProcedureDef ph blk) = do
     env <- get
-    name <- evalProcedureHead ph
-    let newProcEnv = Map.insert name (Procedure name [] blk) (procEnv env)
+    (name, params) <- evalProcedureHead ph
+    let newProcEnv = Map.insert name (Procedure name params blk) (procEnv env)
     put env { procEnv = newProcEnv }
 
-evalProcedureHead :: ProcedureHead -> Interpreter [Char]
-evalProcedureHead (ProcedureHead (Identifier id)) = return id
+evalProcedureHead :: ProcedureHead -> Interpreter ([Char], Params)
+evalProcedureHead (ProcedureHead (Identifier id) lst) = do
+    params <- evalParametersList lst []
+    return (id, params)
+
+evalParametersList :: ParametersList -> Params -> Interpreter Params
+evalParametersList (ParametersList []) lst = return lst
+evalParametersList (ParametersList (Parameter (Identifier id) ty : params)) lst = do
+    ety <- evalType ty
+    let param = (id, ety)
+    evalParametersList (ParametersList params) (param : lst)
 
 evalTypeDefList :: TypeDefList -> Interpreter ()
 evalTypeDefList (TypeDefList []) = return ()
