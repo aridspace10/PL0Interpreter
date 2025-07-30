@@ -69,6 +69,8 @@ data Factor =
     | FactorLValue LValue
     | FactorParen Condition
     | ArrayLiteral [Exp]
+    | String [Char]
+    | CharLiteral Char
     deriving (Show)
 
 data LValue = LValue Identifier [Constant] deriving (Show)
