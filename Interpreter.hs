@@ -1,7 +1,10 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use when" #-}
 {-# HLINT ignore "Redundant bracket" #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# HLINT ignore "Use if" #-}
 module Interpreter where
+import Data.Data
 import Parser
 import FileIO
 import Control.Monad.State
@@ -34,14 +37,17 @@ data Procedure = Procedure {
   body       :: Block
 } deriving (Show)
 
-data Value = IntVal (Maybe Int) 
-            | BoolVal (Maybe Bool)
-            | ArrayContent [Value]
-            | ArrayVal Value
-            | Uninitialized
-            | Undefined  
-            | NotUsed
-            deriving (Show, Eq)
+data Value = IntVal (Maybe Int)
+           | BoolVal (Maybe Bool)
+           | ArrayContent [Value]
+           | ArrayVal Value
+           | Uninitialized
+           | Undefined  
+           | NotUsed
+           deriving (Show, Eq, Data)
+
+sameConstructor :: Value -> Value -> Bool
+sameConstructor a b = toConstr a == toConstr b
 
 type Interpreter a = StateT Env (ExceptT String IO) a
 
@@ -289,11 +295,10 @@ evalStatement (Assignment ty lval cond) = do
                             case ty of
                                 "-" -> assignMemory address (IntVal $ Just (lval - rval))
                                 "+" -> assignMemory address (IntVal $ Just (lval + rval))
-evalStatement (CallStatement (Identifier id) params) = do
+evalStatement (CallStatement (Identifier id) (CallParamList params)) = do
     pro <- lookupProc id
-    assignParams params
+    assignParams params (parameters pro)
     evalBlock (body pro)
-    unassignParams params
 evalStatement (CompoundStatement stmtList) = do
     evalStatementList stmtList
 evalStatement (ForStatement (ForHeader assign cond expr) stmt) = do
@@ -319,6 +324,18 @@ evalStatement (ArrayCreation (LValue (Identifier id) cs) _ const) = do
             let newVEnv = vEnv' {nextFree = address + 1 }
             put env { varEnv = newVEnv }
 evalStatement stuff = throwError (show stuff)
+
+assignParams :: [Condition] -> Params -> Interpreter ()
+assignParams [] [] = return ()
+assignParams lst [] = throwError "Too Many Arguments"
+assignParams [] lst = throwError "Too few arguments"
+assignParams (given: givens) ((id, ty): params) = do
+    econd <- evalCondition given
+    case (sameConstructor econd ty) of
+        True -> do 
+            assignVar id econd
+            assignParams givens params
+        False -> throwError ("Wrong Parameter Types")
 
 arrayBuild _ [] = return ()
 arrayBuild address (elem:elems) = do
