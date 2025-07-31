@@ -62,9 +62,15 @@ assignAddress :: String -> Address -> Interpreter ()
 assignAddress id address = do
     env <- get
     let vEnv = varEnv env
-    let newMapping = Map.insert id address (mapping vEnv)
-    let newVEnv = vEnv { mapping = newMapping}
-    put env { varEnv = newVEnv }
+    case address of
+        (-1) -> do
+            let newMapping = Map.delete id (mapping vEnv)
+            let newVEnv = vEnv { mapping = newMapping}
+            put env { varEnv = newVEnv }
+        _ -> do
+            let newMapping = Map.insert id address (mapping vEnv)
+            let newVEnv = vEnv { mapping = newMapping}
+            put env { varEnv = newVEnv }
 
 accessMemory :: Int -> Interpreter Value
 accessMemory address = do
@@ -299,6 +305,7 @@ evalStatement (CallStatement (Identifier id) (CallParamList params)) = do
     pro <- lookupProc id
     assignParams params (parameters pro)
     evalBlock (body pro)
+    unassignParams (parameters pro)
 evalStatement (CompoundStatement stmtList) = do
     evalStatementList stmtList
 evalStatement (ForStatement (ForHeader assign cond expr) stmt) = do
@@ -324,6 +331,13 @@ evalStatement (ArrayCreation (LValue (Identifier id) cs) _ const) = do
             let newVEnv = vEnv' {nextFree = address + 1 }
             put env { varEnv = newVEnv }
 evalStatement stuff = throwError (show stuff)
+
+unassignParams :: Params -> Interpreter ()
+unassignParams [] = return ()
+unassignParams ((id, _):params) = do
+    assignVar id NotUsed
+    assignAddress id (-1)
+    unassignParams params
 
 assignParams :: [Condition] -> Params -> Interpreter ()
 assignParams [] [] = return ()
