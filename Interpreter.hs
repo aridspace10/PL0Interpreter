@@ -57,6 +57,7 @@ getAddress name = do
     let vEnv = varEnv env
     case Map.lookup name (mapping vEnv) of
         Just address -> return address
+        _ -> throwError (show $ mapping vEnv)
 
 assignAddress :: String -> Address -> Interpreter ()
 assignAddress id address = do
@@ -305,7 +306,7 @@ evalStatement (CallStatement (Identifier id) (CallParamList params)) = do
     pro <- lookupProc id
     assignParams params (parameters pro)
     evalBlock (body pro)
-    unassignParams (parameters pro)
+    --unassignParams (parameters pro)
 evalStatement (CompoundStatement stmtList) = do
     evalStatementList stmtList
 evalStatement (ForStatement (ForHeader assign cond expr) stmt) = do
