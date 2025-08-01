@@ -14,6 +14,7 @@ data AssignedType = IntType
                     | BoolType 
                     | RefType String 
                     | SubType Int Int
+                    | ProcedureType
                     | ArrType AssignedType deriving (Show, Eq)
 data Scope = Scope SymTable [Error] Scope
 type SymTable = Map.Map String AssignedType
@@ -39,7 +40,7 @@ lookupType id = do
         Just IntType -> return IntType
         Just BoolType -> return BoolType
         Just (ArrType ty) -> return $ ArrType ty
-        nothing -> throwError (show symTable)
+        nothing -> throwError (show symTable ++ " with id: " ++ id)
 
 
 getUnresolvedTypes :: [(String , AssignedType)] -> [(String , AssignedType)] -> [(String , AssignedType)]
@@ -107,7 +108,14 @@ checkDecleraton (DecProcedureDef (ProcedureDef pd blk)) = do
     checkBlock blk
 
 checkProcedureHead :: ProcedureHead -> StaticChecker ()
-checkProcedureHead (ProcedureHead (Identifier id) params) = return ()
+checkProcedureHead (ProcedureHead (Identifier id) params) = do
+    Scope symTable errors parent <- get
+    case Map.lookup id symTable of
+        Nothing -> assignVar id ProcedureType
+        _ -> do 
+            ty <- lookupType id 
+            throwError (id ++ "already has type of " ++ show ty)
+    return ()
 
 checkTypeDef :: [TypeDef] -> StaticChecker ()
 checkTypeDef [] = return ()
