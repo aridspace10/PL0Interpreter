@@ -7,7 +7,7 @@ procedure fact(n: int) =
     else 
       begin
         n := n - 1;
-        call fact(); 
+        call fact(n); 
         n := n + 1;
         f := f * n
       end
