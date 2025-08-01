@@ -108,14 +108,22 @@ checkDecleraton (DecProcedureDef (ProcedureDef pd blk)) = do
     checkBlock blk
 
 checkProcedureHead :: ProcedureHead -> StaticChecker ()
-checkProcedureHead (ProcedureHead (Identifier id) params) = do
+checkProcedureHead (ProcedureHead (Identifier id) (ParametersList params)) = do
     Scope symTable errors parent <- get
     case Map.lookup id symTable of
         Nothing -> assignVar id ProcedureType
         _ -> do 
             ty <- lookupType id 
             throwError (id ++ "already has type of " ++ show ty)
+    checkParams params
     return ()
+
+checkParams :: [Parameter] -> StaticChecker ()
+checkParams [] = return ()
+checkParams ((Parameter (Identifier id) ty):params) = do
+    ety <- checkType ty
+    assignVar id ety
+    checkParams params
 
 checkTypeDef :: [TypeDef] -> StaticChecker ()
 checkTypeDef [] = return ()
