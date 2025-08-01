@@ -47,6 +47,7 @@ data Value = IntVal (Maybe Int)
            deriving (Show, Eq, Data)
 
 sameConstructor :: Value -> Value -> Bool
+sameConstructor (ArrayContent _) (ArrayVal _) = True
 sameConstructor a b = toConstr a == toConstr b
 
 type Interpreter a = StateT Env (ExceptT String IO) a
@@ -348,9 +349,13 @@ assignParams (given: givens) ((id, ty): params) = do
     econd <- evalCondition given
     case (sameConstructor econd ty) of
         True -> do 
-            assignVar id econd
-            assignParams givens params
-        False -> throwError ("Wrong Parameter Types")
+            case (ty, econd) of
+                (ArrayVal _, ArrayContent values) -> do
+                    
+                _ -> do
+                    assignVar id econd
+                    assignParams givens params
+        False -> throwError ("Wrong Parameter Types: " ++ show econd ++ " != " ++ show ty)
 
 arrayBuild _ [] = return ()
 arrayBuild address (elem:elems) = do
@@ -451,12 +456,14 @@ evalExp (BinaryExp str term exp) = do
 evalTerm :: Term -> Interpreter Value
 evalTerm (SingleFactor fact) = evalFactor fact
 evalTerm (BinaryTerm fact op term) = do
+    env <- get
     fact' <- evalFactor fact 
     term' <- evalTerm term
     case (op) of
         "*" -> do
             case (fact', term') of
                 (IntVal (Just left), IntVal (Just right)) -> return $ IntVal $ Just (left * right)
+                _ -> throwError (show fact' ++ " " ++ show term' ++ show env)
         "/" -> do
             case (fact', term') of
                 (IntVal (Just left), IntVal (Just right)) -> return $ IntVal $ Just (div left right)
