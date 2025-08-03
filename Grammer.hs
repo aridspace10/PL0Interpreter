@@ -29,7 +29,7 @@ data ParametersList = ParametersList [Parameter] deriving Show
 data Parameter = Parameter Identifier Type deriving Show
 data StatementList = ComplexStatement Statement StatementList | SimpleStatement Statement | EmptyStatement deriving Show
 data Statement =
-    Assignment String LValue Condition
+    Assignment LValue AssignOperator Assignables
     | ArrayCreation LValue Type Constant
     | CallStatement Identifier CallParamList
     | ReadStatement LValue
@@ -38,6 +38,11 @@ data Statement =
     | IfStatement Condition Statement Statement
     | ForStatement ForHeader Statement
     | CompoundStatement StatementList deriving Show
+
+data Assignables = AssignedCall CallStatement
+                   | AssignedCondition Condition deriving Show
+
+data AssignOperator = AssignOperator String deriving Show
 
 data CallParamList = CallParamList [Condition] deriving Show
 
