@@ -93,7 +93,8 @@ assignMemory address val = do
 lookupVar :: String -> Interpreter Value
 lookupVar name = do
     address <- getAddress name
-    accessMemory address
+    val <- accessMemory address
+    return val
 
 assignVar :: String -> Value -> Interpreter ()
 assignVar name val = do
@@ -357,10 +358,10 @@ assignParams (given: givens) ((id, ty): params) = do
                     let vEnv = varEnv env
                     let address = nextFree vEnv
                     assignAddress id address 
-                    arrayBuild (address + 1) values
+                    next <- arrayBuild (address + 1) values
                     env' <- get
                     let vEnv' = varEnv env'
-                    let newVEnv = vEnv' {nextFree = address + 1 }
+                    let newVEnv = vEnv' {nextFree = next }
                     put env { varEnv = newVEnv }
                 _ -> do
                     assignVar id econd
@@ -444,6 +445,7 @@ evalRelationalCondition (ComplexRelCondition lexp (RelOp op) rexp) = do
 evalExp :: Exp -> Interpreter Value
 evalExp (SingleExp str term) = do
     val <- evalTerm term
+    env <- get
     case (val) of
         (IntVal me) -> case (me) of
             (Just e) -> do
@@ -453,7 +455,7 @@ evalExp (SingleExp str term) = do
         (BoolVal e) -> return (BoolVal e)
         (ArrayContent e) -> return (ArrayContent e)
         (ArrayVal e) -> return (ArrayVal e)
-        _ -> throwError $ (show val)
+        _ -> throwError $ (show val ++ show env)
 evalExp (BinaryExp str term exp) = do
     eval <- evalTerm term
     eexp <- evalExp exp
