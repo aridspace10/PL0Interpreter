@@ -351,13 +351,22 @@ assignParams (given: givens) ((id, ty): params) = do
         True -> do 
             case (ty, econd) of
                 (ArrayVal _, ArrayContent values) -> do
-                    
+                    liftIO $ print values
+                    env <- get
+                    let vEnv = varEnv env
+                    let address = nextFree vEnv
+                    assignAddress id address 
+                    arrayBuild (address + 1) values
+                    env' <- get
+                    let vEnv' = varEnv env'
+                    let newVEnv = vEnv' {nextFree = address + 1 }
+                    put env { varEnv = newVEnv }
                 _ -> do
                     assignVar id econd
                     assignParams givens params
         False -> throwError ("Wrong Parameter Types: " ++ show econd ++ " != " ++ show ty)
 
-arrayBuild _ [] = return ()
+arrayBuild add [] = return ()
 arrayBuild address (elem:elems) = do
     assignMemory address elem
     arrayBuild (address + 1) elems
@@ -442,6 +451,7 @@ evalExp (SingleExp str term) = do
         (BoolVal e) -> return (BoolVal e)
         (ArrayContent e) -> return (ArrayContent e)
         (ArrayVal e) -> return (ArrayVal e)
+        _ -> throwError $ (show val)
 evalExp (BinaryExp str term exp) = do
     eval <- evalTerm term
     eexp <- evalExp exp
