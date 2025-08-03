@@ -47,11 +47,13 @@ ForStatement → KW_FOR LPAREN ForHeader RPAREN KW_DO Statement
 
 ForHeader → [Assignment] SEMICOLON [Condition] SEMICOLON [Exp]
 
-Assignment → LValue ASSIGN Condition 
-           | LValue PLUSEQUAL Condition 
-           | LValue MINUSEQUALS Condition
-           | kwNew TypeIdentifer lparen Constant rparen
-           | LBRACKET [ Condition ] { SemiColon Condition} RBRACKET
+Assignment → LValue AssignmentOperators Assignables
+
+AssignmentOperators → ASSIGN | PLUSEQUAL | MINUSEQUALS
+
+Assignables → CallStatement 
+            | kwNew TypeIdentifer lparen Constant rparen
+            | Condition
 
 CallStatement → KW CALL IDENTIFIER LPAREN CallParamList RPAREN
 
