@@ -89,18 +89,18 @@ assignMemory address val = do
     let newVEnv = vEnv { memory = newMemory }
     put env { varEnv = newVEnv }
 
-getArrayContent :: Int -> Int -> [Value] -> Interpreter ArrayContent
+getArrayContent :: Int -> Int -> [Value] -> Interpreter Value
 getArrayContent _ 0 vals = return (ArrayContent vals)
 getArrayContent address left vals = do
     val <- accessMemory address 
-    getArrayContent (address + 1) (left - 1) (vals : val)
+    getArrayContent (address + 1) (left - 1) (val : vals)
 
 lookupVar :: String -> Interpreter Value
 lookupVar name = do
     address <- getAddress name
     val <- accessMemory address
     case val of
-        ArrayVal (IntVal (Just len)) -> 
+        ArrayVal (IntVal (Just len)) -> getArrayContent (address + 1) len []
         _ -> return val
 
 assignVar :: String -> Value -> Interpreter ()
