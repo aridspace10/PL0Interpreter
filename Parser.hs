@@ -315,6 +315,14 @@ parseAssignment = do
     assignable <- parseAssignable
     return (Assignment lval op assignable)
 
+parseAssignable :: Parser Assignables
+parseAssignable = do
+    call <- parseCallStatement
+    return (AssignedCall call)
+    <|> do
+    cond <- parseCondition
+    return (AssignedCondition cond)
+
 parseReadStatement :: Parser Statement
 parseReadStatement = do
     symbol kwRead
