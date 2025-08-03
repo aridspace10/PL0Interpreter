@@ -1,13 +1,12 @@
 var i: int;
+    a: array(int);
 procedure double(n: array(int)) =
   begin
     for (i := 0; i < 4; i + 1) do
         begin
             n[i] := n[i] * 2
         end;
-    a := n
   end;
 begin
-    call double([1,2,3,4]);
-    write a
+    call double([1,2,3,4])
 end
