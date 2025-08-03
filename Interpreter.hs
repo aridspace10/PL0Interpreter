@@ -239,7 +239,7 @@ print' (ArrayVal (IntVal (Just space))) (SingleExp "" (SingleFactor (FactorLValu
             print' temp Empty
             liftIO $ putStr ","
             printArray (address + 1) (space - 1)
-print' v _ = throwError (show v)
+print' v _ = throwError ("Error in print: " ++ show v)
 
 evalStatement :: Statement -> Interpreter ()
 evalStatement (WriteStatement exp) = do
@@ -334,7 +334,7 @@ evalStatement (ArrayCreation (LValue (Identifier id) cs) _ const) = do
             let vEnv' = varEnv env'
             let newVEnv = vEnv' {nextFree = address + 1 }
             put env { varEnv = newVEnv }
-evalStatement stuff = throwError (show stuff)
+evalStatement stuff = throwError ("Compiler Error in EvalStatement: " ++ show stuff)
 
 unassignParams :: Params -> Interpreter ()
 unassignParams [] = return ()
@@ -358,6 +358,7 @@ assignParams (given: givens) ((id, ty): params) = do
                     let vEnv = varEnv env
                     let address = nextFree vEnv
                     assignAddress id address 
+                    assignMemory address (ArrayVal $ IntVal $ Just (length values))
                     next <- arrayBuild (address + 1) values
                     env' <- get
                     let vEnv' = varEnv env'
