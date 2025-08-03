@@ -12,7 +12,6 @@ import Control.Monad.Except
 import qualified Data.Map as Map
 import qualified Data.Vector as V
 import Grammer
-import Grammer (ParametersList(ParametersList))
 
 type Address       = Int
 type MemoryMapping = Map.Map String Address
@@ -90,11 +89,19 @@ assignMemory address val = do
     let newVEnv = vEnv { memory = newMemory }
     put env { varEnv = newVEnv }
 
+getArrayContent :: Int -> Int -> [Value] -> Interpreter ArrayContent
+getArrayContent _ 0 vals = return (ArrayContent vals)
+getArrayContent address left vals = do
+    val <- accessMemory address 
+    getArrayContent (address + 1) (left - 1) (vals : val)
+
 lookupVar :: String -> Interpreter Value
 lookupVar name = do
     address <- getAddress name
     val <- accessMemory address
-    return val
+    case val of
+        ArrayVal (IntVal (Just len)) -> 
+        _ -> return val
 
 assignVar :: String -> Value -> Interpreter ()
 assignVar name val = do
