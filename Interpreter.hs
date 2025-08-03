@@ -282,6 +282,7 @@ evalStatement (Assignment ty lval cond) = do
                                     (False) -> do
                                         address <- getAddress id
                                         arrayBuild (address + 1) values
+                                        return ()
                         _ -> assignVar id econd
                 _ -> do
                     val <- lookupVar id
@@ -366,7 +367,8 @@ assignParams (given: givens) ((id, ty): params) = do
                     assignParams givens params
         False -> throwError ("Wrong Parameter Types: " ++ show econd ++ " != " ++ show ty)
 
-arrayBuild add [] = return ()
+arrayBuild :: Int -> [Value] -> Interpreter Int
+arrayBuild add [] = return add
 arrayBuild address (elem:elems) = do
     assignMemory address elem
     arrayBuild (address + 1) elems
