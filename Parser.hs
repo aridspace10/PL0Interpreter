@@ -8,6 +8,7 @@ import GHC.TypeLits (Nat)
 import FileIO
 import Data.List (filter)
 import Grammer
+import Grammer (Statement(Assignment))
 
 assign = ":=";
 colon = ":";
@@ -310,23 +311,9 @@ parseAssignment = do
     return (ArrayCreation lval ty c)
     <|> do
     lval <- parseLValue
-    symbol assign
-    cond <- parseCondition
-    return (Assignment "" lval cond)
-    <|> do
-    lval <- parseLValue
-    symbol kwPlusEquals
-    cond <- parseCondition
-    return (Assignment "+" lval cond)
-    <|> do
-    lval <- parseLValue
-    symbol kwMinusEquals
-    cond <- parseCondition
-    return (Assignment "-" lval cond)
-  where
-    parseConds = do
-        symbol ","
-        parseCondition 
+    op <- parseAssignmentOperator
+    assignable <- parseAssignable
+    return (Assignment lval op assignable)
 
 parseReadStatement :: Parser Statement
 parseReadStatement = do
