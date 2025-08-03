@@ -323,6 +323,17 @@ parseAssignable = do
     cond <- parseCondition
     return (AssignedCondition cond)
 
+parseAssignmentOperator :: Parser AssignOperator
+parseAssignmentOperator = do
+    symbol "+="
+    return (AssignOperator "+=")
+    <|> do
+    symbol "-="
+    return (AssignOperator "-=")
+    <|> do
+    symbol ":="
+    return (AssignOperator ":=")
+
 parseReadStatement :: Parser Statement
 parseReadStatement = do
     symbol kwRead
