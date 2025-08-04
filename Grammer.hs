@@ -39,7 +39,7 @@ data Statement =
     | ForStatement ForHeader Statement
     | CompoundStatement StatementList deriving Show
 
-data Assignables = AssignedCall CallStatement
+data Assignables = AssignedCall Statement
                    | AssignedCondition Condition deriving Show
 
 data AssignOperator = AssignOperator String deriving Show
