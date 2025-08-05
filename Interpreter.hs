@@ -12,6 +12,7 @@ import Control.Monad.Except
 import qualified Data.Map as Map
 import qualified Data.Vector as V
 import Grammer
+import Grammer (AssignOperator(AssignOperator))
 
 type Address       = Int
 type MemoryMapping = Map.Map String Address
@@ -273,12 +274,12 @@ evalStatement (WhileStatement cond stat) = do
                     else return ()
                 _ -> return ()
         _ -> throwError ("Big Boy Problem")
-evalStatement (Assignment ty lval cond) = do
+evalStatement (Assignment lval (AssignOperator op) cond) = do
     econd <- evalCondition cond
     case lval of
         (LValue (Identifier id) []) -> do
-            case ty of
-                "" -> do
+            case op of
+                ":=" -> do
                     case econd of
                         (ArrayContent values) -> do
                             val <- lookupVar id
@@ -297,21 +298,21 @@ evalStatement (Assignment ty lval cond) = do
                     case (val, econd) of
                         (IntVal (Just lval), IntVal (Just rval)) -> do
                             case ty of
-                                "-" -> assignVar id (IntVal $ Just (lval - rval))
-                                "+" -> assignVar id (IntVal $ Just (lval + rval))
+                                "-=" -> assignVar id (IntVal $ Just (lval - rval))
+                                "+=" -> assignVar id (IntVal $ Just (lval + rval))
         (LValue (Identifier id) (const:[])) -> do
             a <- getAddress id
             (IntVal (Just c)) <- evalConstant const
             let address = a + c + 1
-            case ty of
-                "" -> assignMemory address econd
+            case op of
+                ":=" -> assignMemory address econd
                 _ -> do
                     val <- accessMemory address
                     case (val, econd) of
                         (IntVal (Just lval), IntVal (Just rval)) -> do
                             case ty of
-                                "-" -> assignMemory address (IntVal $ Just (lval - rval))
-                                "+" -> assignMemory address (IntVal $ Just (lval + rval))
+                                "-=" -> assignMemory address (IntVal $ Just (lval - rval))
+                                "+=" -> assignMemory address (IntVal $ Just (lval + rval))
 evalStatement (CallStatement (Identifier id) (CallParamList params)) = do
     pro <- lookupProc id
     assignParams params (parameters pro)
