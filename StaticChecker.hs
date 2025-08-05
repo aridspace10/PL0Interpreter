@@ -195,9 +195,9 @@ checkAccessing (ArrType innerty) (c:cs) = checkAccessing innerty cs
 checkAccessing (ty) (c:cs) = throwError "Int is not subscriptable"
 
 checkStatement :: Statement -> StaticChecker ()
-checkStatement (Assignment ty lval cond) = do
+checkStatement (Assignment lval (AssignOperator op) cond) = do
     checkLValue lval
-    condType <- checkCondition cond
+    condType <- checkAssignable cond
     case (lval) of
         (LValue (Identifier id) const) -> do
             idType <- lookupType id
@@ -230,6 +230,10 @@ checkStatement (CompoundStatement stmtList) = do
 checkStatement (CallStatement id params) = return ()
 checkStatement (ForStatement header stmt) = do
     checkStatement stmt
+
+checkAssignable :: Assignables -> StaticChecker AssignedType
+checkAssignable (AssignedCall (CallStatement (Identifier id) params)) = lookupType id
+checkAssignable (AssignedCondition cond) = checkCondition cond
 
 checkLValue :: LValue -> StaticChecker AssignedType
 checkLValue (LValue (Identifier id) consts) = 
