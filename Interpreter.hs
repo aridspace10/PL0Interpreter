@@ -12,7 +12,8 @@ import Control.Monad.Except
 import qualified Data.Map as Map
 import qualified Data.Vector as V
 import Grammer
-import Grammer (AssignOperator(AssignOperator))
+import Grammer (AssignOperator(AssignOperator), Assignables (AssignedCondition))
+import StaticChecker (checkCondition)
 
 type Address       = Int
 type MemoryMapping = Map.Map String Address
@@ -274,13 +275,13 @@ evalStatement (WhileStatement cond stat) = do
                     else return ()
                 _ -> return ()
         _ -> throwError ("Big Boy Problem")
-evalStatement (Assignment lval (AssignOperator op) cond) = do
-    econd <- evalCondition cond
+evalStatement (Assignment lval (AssignOperator op) assign) = do
+    eassign <- evalAssignable assign
     case lval of
         (LValue (Identifier id) []) -> do
             case op of
                 ":=" -> do
-                    case econd of
+                    case eassign of
                         (ArrayContent values) -> do
                             val <- lookupVar id
                             case val of
@@ -292,12 +293,12 @@ evalStatement (Assignment lval (AssignOperator op) cond) = do
                                         address <- getAddress id
                                         arrayBuild (address + 1) values
                                         return ()
-                        _ -> assignVar id econd
+                        _ -> assignVar id eassign
                 _ -> do
                     val <- lookupVar id
-                    case (val, econd) of
+                    case (val, eassign) of
                         (IntVal (Just lval), IntVal (Just rval)) -> do
-                            case ty of
+                            case op of
                                 "-=" -> assignVar id (IntVal $ Just (lval - rval))
                                 "+=" -> assignVar id (IntVal $ Just (lval + rval))
         (LValue (Identifier id) (const:[])) -> do
@@ -305,12 +306,12 @@ evalStatement (Assignment lval (AssignOperator op) cond) = do
             (IntVal (Just c)) <- evalConstant const
             let address = a + c + 1
             case op of
-                ":=" -> assignMemory address econd
+                ":=" -> assignMemory address eassign
                 _ -> do
                     val <- accessMemory address
-                    case (val, econd) of
+                    case (val, eassign) of
                         (IntVal (Just lval), IntVal (Just rval)) -> do
-                            case ty of
+                            case op of
                                 "-=" -> assignMemory address (IntVal $ Just (lval - rval))
                                 "+=" -> assignMemory address (IntVal $ Just (lval + rval))
 evalStatement (CallStatement (Identifier id) (CallParamList params)) = do
@@ -343,6 +344,9 @@ evalStatement (ArrayCreation (LValue (Identifier id) cs) _ const) = do
             let newVEnv = vEnv' {nextFree = address + 1 }
             put env { varEnv = newVEnv }
 evalStatement stuff = throwError ("Compiler Error in EvalStatement: " ++ show stuff)
+
+evalAssignable :: Assignables -> Interpreter Value
+evalAssignable (AssignedCondition cond) = evalCondition cond
 
 unassignParams :: Params -> Interpreter ()
 unassignParams [] = return ()
