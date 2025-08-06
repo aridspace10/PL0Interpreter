@@ -8,6 +8,7 @@ import GHC.TypeLits (Nat)
 import FileIO
 import Data.List (filter)
 import Grammer
+import Grammer (Factor(CharLiteral))
 
 assign = ":=";
 colon = ":";
@@ -527,6 +528,11 @@ parseFactor =
     <|> do
         symbol "\""
         parseChars ""
+    <|> do
+        symbol "\'"
+        c <- item 
+        symbol "\'"
+        return (CharLiteral c)
     where
         parseManyExp = do
             symbol ","
