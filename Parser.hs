@@ -524,10 +524,20 @@ parseFactor =
         rcond <- many parseManyExp
         symbol rbracket
         return (ArrayLiteral (fcond : rcond))
+    <|> do
+        symbol "\""
+        parseChars ""
     where
         parseManyExp = do
             symbol ","
             parseExp
+        parseChars chars = do
+            symbol "\""
+            return (String chars)
+            <|> do
+            c <- item
+            parseChars (chars ++ [c])
+
 
 parseLValue :: Parser LValue
 parseLValue = do
