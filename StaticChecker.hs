@@ -14,7 +14,8 @@ data AssignedType = IntType
                     | BoolType 
                     | RefType String 
                     | SubType Int Int
-                    | ProcedureType
+                    | ProcedureType AssignedType
+                    | None
                     | ArrType AssignedType deriving (Show, Eq)
 data Scope = Scope SymTable [Error] Scope
 type SymTable = Map.Map String AssignedType
@@ -108,10 +109,11 @@ checkDecleraton (DecProcedureDef (ProcedureDef pd blk)) = do
     checkBlock blk
 
 checkProcedureHead :: ProcedureHead -> StaticChecker ()
-checkProcedureHead (ProcedureHead (Identifier id) (ParametersList params)) = do
+checkProcedureHead (ProcedureHead (Identifier id) (ParametersList params) ty) = do
     Scope symTable errors parent <- get
+    ety <- checkType ty
     case Map.lookup id symTable of
-        Nothing -> assignVar id ProcedureType
+        Nothing -> assignVar id (ProcedureType ety)
         _ -> do 
             ty <- lookupType id 
             throwError (id ++ "already has type of " ++ show ty)
@@ -144,6 +146,7 @@ checkType (TypeIdentifer (Identifier tid)) = do
         "int" -> return IntType
         "bool" ->  return BoolType
         _ -> return (RefType tid)
+checkType (None) = return None
 checkType _ = throwError "Unknown Type Given"
 
 
@@ -230,6 +233,7 @@ checkStatement (CompoundStatement stmtList) = do
 checkStatement (CallStatement id params) = return ()
 checkStatement (ForStatement header stmt) = do
     checkStatement stmt
+checkStatement (ReturnStatement assign) = checkAssignable assign
 
 checkAssignable :: Assignables -> StaticChecker AssignedType
 checkAssignable (AssignedCall (CallStatement (Identifier id) params)) = lookupType id
