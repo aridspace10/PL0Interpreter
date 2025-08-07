@@ -24,7 +24,7 @@ data Type =
 data VarDeclList = VarDeclList [VarDecl] deriving (Show)
 data VarDecl = VarDecl Identifier Type deriving (Show)
 data ProcedureDef = ProcedureDef ProcedureHead Block deriving (Show)
-data ProcedureHead = ProcedureHead Identifier ParametersList deriving Show
+data ProcedureHead = ProcedureHead Identifier ParametersList Type deriving Show
 data ParametersList = ParametersList [Parameter] deriving Show
 data Parameter = Parameter Identifier Type deriving Show
 data StatementList = ComplexStatement Statement StatementList | SimpleStatement Statement | EmptyStatement deriving Show
@@ -37,6 +37,7 @@ data Statement =
     | WhileStatement Condition Statement
     | IfStatement Condition Statement Statement
     | ForStatement ForHeader Statement
+    | ReturnStatement Assignable
     | CompoundStatement StatementList deriving Show
 
 data Assignables = AssignedCall Statement
