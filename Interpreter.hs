@@ -35,6 +35,7 @@ data Env = Env {
 data Procedure = Procedure {
   procName   :: String,
   parameters :: Params,
+  type       :: Type,
   body       :: Block
 } deriving (Show)
 
@@ -161,14 +162,14 @@ evalDeclaration (DecProcedureDef pd) = evalProcedureDef pd
 evalProcedureDef :: ProcedureDef -> Interpreter ()
 evalProcedureDef (ProcedureDef ph blk) = do
     env <- get
-    (name, params) <- evalProcedureHead ph
-    let newProcEnv = Map.insert name (Procedure name params blk) (procEnv env)
+    (name, params, ty) <- evalProcedureHead ph
+    let newProcEnv = Map.insert name (Procedure name params ty blk) (procEnv env)
     put env { procEnv = newProcEnv }
 
-evalProcedureHead :: ProcedureHead -> Interpreter ([Char], Params)
-evalProcedureHead (ProcedureHead (Identifier id) lst) = do
+evalProcedureHead :: ProcedureHead -> Interpreter ([Char], Params, Type)
+evalProcedureHead (ProcedureHead (Identifier id) lst ty) = do
     params <- evalParametersList lst []
-    return (id, params)
+    return (id, params, ty)
 
 evalParametersList :: ParametersList -> Params -> Interpreter Params
 evalParametersList (ParametersList []) lst = return lst
