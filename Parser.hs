@@ -274,7 +274,14 @@ parseProcedureHead = do
     symbol lparen
     lst <- parseParametersList
     symbol rparen
-    return (ProcedureHead id lst)
+    ty <- parseReturnType
+    return (ProcedureHead id lst ty)
+    where
+        parseReturnType = do
+            symbol kwArrow
+            parseType
+            <|> do
+            return None
 
 parseParametersList :: Parser ParametersList
 parseParametersList = do
