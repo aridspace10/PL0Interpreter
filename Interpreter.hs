@@ -258,16 +258,17 @@ evalStatement :: Statement -> Interpreter (Either () Value)
 evalStatement (WriteStatement exp) = do
     val <- evalExp exp
     print' val exp
+    return (Left ())
 evalStatement (ReturnStatement assign) = do
     eassign <- evalAssignable
-    return $ Left eassign
+    return $ Right eassign
 evalStatement (IfStatement cond stat1 stat2) = do
     val <- evalCondition cond
     case (val) of
         (BoolVal r) -> do
             case (r) of
                 (Just v) -> if v then evalStatement stat1 else evalStatement stat2
-                _ -> return ()
+                _ -> return (Left ())
         _ -> throwError ("Big Boy Problem")
 evalStatement (WhileStatement cond stat) = do
     val <- evalCondition cond
@@ -278,8 +279,8 @@ evalStatement (WhileStatement cond stat) = do
                     if v then (do 
                             evalStatement stat
                             evalStatement (WhileStatement cond stat))
-                    else return ()
-                _ -> return ()
+                    else return (Left ())
+                _ -> return (Left ())
         _ -> throwError ("Big Boy Problem")
 evalStatement (Assignment lval (AssignOperator op) assign) = do
     eassign <- evalAssignable assign
@@ -298,8 +299,10 @@ evalStatement (Assignment lval (AssignOperator op) assign) = do
                                     (False) -> do
                                         address <- getAddress id
                                         arrayBuild (address + 1) values
-                                        return ()
-                        _ -> assignVar id eassign
+                                        return (Left ())
+                        _ -> do
+                            assignVar id eassign
+                            return (Left ())
                 _ -> do
                     val <- lookupVar id
                     case (val, eassign) of
@@ -307,6 +310,8 @@ evalStatement (Assignment lval (AssignOperator op) assign) = do
                             case op of
                                 "-=" -> assignVar id (IntVal $ Just (lval - rval))
                                 "+=" -> assignVar id (IntVal $ Just (lval + rval))
+                            return (Left ())
+            return (Left ())
         (LValue (Identifier id) (const:[])) -> do
             a <- getAddress id
             (IntVal (Just c)) <- evalConstant const
@@ -320,6 +325,7 @@ evalStatement (Assignment lval (AssignOperator op) assign) = do
                             case op of
                                 "-=" -> assignMemory address (IntVal $ Just (lval - rval))
                                 "+=" -> assignMemory address (IntVal $ Just (lval + rval))
+            return (Left ())
 evalStatement (CallStatement (Identifier id) (CallParamList params)) = do
     pro <- lookupProc id
     assignParams params (parameters pro)
@@ -328,13 +334,15 @@ evalStatement (CallStatement (Identifier id) (CallParamList params)) = do
     g <- evalBlock (body pro)
     put env {varEnv = vEnv}
     return g
-    
 evalStatement (CompoundStatement stmtList) = do
     evalStatementList stmtList
+    return (Left ())
 evalStatement (ForStatement (ForHeader assign cond expr) stmt) = do
     evalStatement assign
     case assign of
-        (Assignment (LValue (Identifier id) _) (AssignOperator ":=") _) -> evalForLoop id cond expr stmt
+        (Assignment (LValue (Identifier id) _) (AssignOperator ":=") _) -> do
+            evalForLoop id cond expr stmt
+            return (Left ())
         _ -> throwError "Assingment wasn't used"
 evalStatement (ArrayCreation (LValue (Identifier id) cs) _ const) = do
     val <- lookupVar id
@@ -353,6 +361,7 @@ evalStatement (ArrayCreation (LValue (Identifier id) cs) _ const) = do
             let vEnv' = varEnv env'
             let newVEnv = vEnv' {nextFree = address + 1 }
             put env { varEnv = newVEnv }
+            return (Left ())
 evalStatement stuff = throwError ("Compiler Error in EvalStatement: " ++ show stuff)
 
 evalAssignable :: Assignables -> Interpreter Value
