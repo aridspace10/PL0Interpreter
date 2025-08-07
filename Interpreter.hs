@@ -35,7 +35,7 @@ data Env = Env {
 data Procedure = Procedure {
   procName   :: String,
   parameters :: Params,
-  type       :: Type,
+  ty       :: Type,
   body       :: Block
 } deriving (Show)
 
@@ -142,7 +142,7 @@ evalProgram :: Program -> Interpreter ()
 evalProgram (Program blk) = do
     evalBlock blk
 
-evalBlock :: Block -> Interpreter Either () Value
+evalBlock :: Block -> Interpreter (Either () Value)
 evalBlock (Block decs cmpStmt) = do
     evalDeclarationList decs 
     g <- evalStatement cmpStmt
@@ -221,7 +221,7 @@ evalType (TypeIdentifer (Identifier ty)) = do
     then return (BoolVal Nothing)
     else throwError ("Unknown Type ")
 
-evalStatementList :: StatementList -> Interpreter Either () Value
+evalStatementList :: StatementList -> Interpreter (Either () Value)
 evalStatementList (ComplexStatement stmt stmtList) = do
     g <- evalStatement stmt
     case g of 
@@ -254,7 +254,7 @@ print' (ArrayVal (IntVal (Just space))) (SingleExp "" (SingleFactor (FactorLValu
             printArray (address + 1) (space - 1)
 print' v _ = throwError ("Error in print: " ++ show v)
 
-evalStatement :: Statement -> Interpreter Either () Value
+evalStatement :: Statement -> Interpreter (Either () Value)
 evalStatement (WriteStatement exp) = do
     val <- evalExp exp
     print' val exp
