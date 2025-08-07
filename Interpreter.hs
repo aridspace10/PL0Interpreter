@@ -142,10 +142,11 @@ evalProgram :: Program -> Interpreter ()
 evalProgram (Program blk) = do
     evalBlock blk
 
-evalBlock :: Block -> Interpreter ()
+evalBlock :: Block -> Interpreter Either () Value
 evalBlock (Block decs cmpStmt) = do
     evalDeclarationList decs 
-    evalStatement cmpStmt
+    g <- evalStatement cmpStmt
+    return g
 
 evalDeclarationList :: DecleratonList -> Interpreter ()
 evalDeclarationList (DecleratonList []) = return ()
@@ -324,8 +325,9 @@ evalStatement (CallStatement (Identifier id) (CallParamList params)) = do
     assignParams params (parameters pro)
     env <- get 
     let vEnv = varEnv env
-    evalBlock (body pro)
+    g <- evalBlock (body pro)
     put env {varEnv = vEnv}
+    return g
     
 evalStatement (CompoundStatement stmtList) = do
     evalStatementList stmtList
@@ -355,6 +357,11 @@ evalStatement stuff = throwError ("Compiler Error in EvalStatement: " ++ show st
 
 evalAssignable :: Assignables -> Interpreter Value
 evalAssignable (AssignedCondition cond) = evalCondition cond
+evalAssignable (AssignedCall call) = do
+    g <- evalStatement call
+    case g of
+        Left () -> throwError "Requires something returned from function"
+        Right val -> return val
 
 unassignParams :: Params -> Interpreter ()
 unassignParams [] = return ()
