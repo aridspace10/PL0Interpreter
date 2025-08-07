@@ -405,7 +405,14 @@ parseStatement =
     <|> parseWhileStatement
     <|> parseIfStatement
     <|> parseForStatement
+    <|> parseReturnStatement
     <|> parseCompoundStatement
+
+parseReturnStatement :: Parser Statement
+parseReturnStatement = do
+    symbol kwReturn
+    assign <- parseAssignable
+    return (ReturnStatement assign)
 
 parseForStatement :: Parser Statement
 parseForStatement = do
