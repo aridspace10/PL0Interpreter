@@ -38,7 +38,7 @@ data Statement =
     | WhileStatement Condition Statement
     | IfStatement Condition Statement Statement
     | ForStatement ForHeader Statement
-    | ReturnStatement Assignable
+    | ReturnStatement Assignables
     | CompoundStatement StatementList deriving Show
 
 data Assignables = AssignedCall Statement

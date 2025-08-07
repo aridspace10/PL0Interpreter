@@ -324,7 +324,7 @@ evalStatement (CompoundStatement stmtList) = do
 evalStatement (ForStatement (ForHeader assign cond expr) stmt) = do
     evalStatement assign
     case assign of
-        (Assignment _ (LValue (Identifier id) _) _) -> evalForLoop id cond expr stmt
+        (Assignment (LValue (Identifier id) _) (AssignOperator ":=") _) -> evalForLoop id cond expr stmt
         _ -> throwError "Assingment wasn't used"
 evalStatement (ArrayCreation (LValue (Identifier id) cs) _ const) = do
     val <- lookupVar id
