@@ -15,7 +15,7 @@ data AssignedType = IntType
                     | RefType String 
                     | SubType Int Int
                     | ProcedureType AssignedType
-                    | None
+                    | NoneType
                     | ArrType AssignedType deriving (Show, Eq)
 data Scope = Scope SymTable [Error] Scope
 type SymTable = Map.Map String AssignedType
@@ -41,6 +41,7 @@ lookupType id = do
         Just IntType -> return IntType
         Just BoolType -> return BoolType
         Just (ArrType ty) -> return $ ArrType ty
+        Just (ProcedureType ty) -> return $ ProcedureType ty
         nothing -> throwError (show symTable ++ " with id: " ++ id)
 
 
@@ -146,7 +147,7 @@ checkType (TypeIdentifer (Identifier tid)) = do
         "int" -> return IntType
         "bool" ->  return BoolType
         _ -> return (RefType tid)
-checkType (None) = return None
+checkType (None) = return NoneType
 checkType _ = throwError "Unknown Type Given"
 
 
@@ -205,9 +206,17 @@ checkStatement (Assignment lval (AssignOperator op) cond) = do
         (LValue (Identifier id) const) -> do
             idType <- lookupType id
             targetTy <- checkAccessing idType const
-            if condType == targetTy
-            then return ()
-            else throwError ("Cannot Assign " ++ (show condType) ++ " to " ++ (show targetTy))
+            case cond of
+                (AssignedCondition _) -> do
+                    if condType == targetTy
+                    then return ()
+                    else throwError ("Cannot Assign " ++ (show condType) ++ " to " ++ (show targetTy))
+                (AssignedCall _) -> do
+                    case condType of
+                        (ProcedureType innerty) -> do
+                            if innerty == targetTy
+                            then return ()
+                            else throwError ("Cannot Assign Procedure with return type " ++ (show condType) ++ " to " ++ (show targetTy))
         _ -> throwError "IDK how"
 checkStatement (ArrayCreation lval ty const) = do
     let e = getConst const
@@ -233,7 +242,7 @@ checkStatement (CompoundStatement stmtList) = do
 checkStatement (CallStatement id params) = return ()
 checkStatement (ForStatement header stmt) = do
     checkStatement stmt
-checkStatement (ReturnStatement assign) = checkAssignable assign
+checkStatement (ReturnStatement assign) = return ()
 
 checkAssignable :: Assignables -> StaticChecker AssignedType
 checkAssignable (AssignedCall (CallStatement (Identifier id) params)) = lookupType id
