@@ -18,7 +18,7 @@ lparen = "(";
 rparen = ")";
 lbracket = "[";
 rbracket = "]";
-equal = "=";
+equal = ":=";
 nequal = "!=";
 less = "<";
 greater = ">";
@@ -28,6 +28,9 @@ plus = "+";
 minus = "-";
 times = "*";
 divides = "/";
+logicalOr = "||";
+logicalAnd = "&&";
+logicalXor = "^^";
 kwBegin = "begin";
 kwCall = "call";
 kwConst = "const";
@@ -47,6 +50,9 @@ kwMinusEquals = "-=";
 kwPlusEquals = "+=";
 kwNew = "new";
 kwArray = "array";
+kwArrow = "->";
+kwReturn = "return";
+colon = ",";
 
 newtype Parser a = P (String -> Maybe (a, String))
 
