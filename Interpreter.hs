@@ -220,7 +220,7 @@ evalType (TypeIdentifer (Identifier ty)) = do
     then return (BoolVal Nothing)
     else throwError ("Unknown Type ")
 
-evalStatementList :: StatementList -> Interpreter ()
+evalStatementList :: StatementList -> Interpreter Either () Value
 evalStatementList (ComplexStatement stmt stmtList) = do
     g <- evalStatement stmt
     case g of 
@@ -322,8 +322,11 @@ evalStatement (Assignment lval (AssignOperator op) assign) = do
 evalStatement (CallStatement (Identifier id) (CallParamList params)) = do
     pro <- lookupProc id
     assignParams params (parameters pro)
+    env <- get 
+    let vEnv = varEnv env
     evalBlock (body pro)
-    --unassignParams (parameters pro)
+    put env {varEnv = vEnv}
+    
 evalStatement (CompoundStatement stmtList) = do
     evalStatementList stmtList
 evalStatement (ForStatement (ForHeader assign cond expr) stmt) = do
