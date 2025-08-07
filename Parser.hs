@@ -18,7 +18,7 @@ lparen = "(";
 rparen = ")";
 lbracket = "[";
 rbracket = "]";
-equal = ":=";
+equal = "=";
 nequal = "!=";
 less = "<";
 greater = ">";
@@ -486,14 +486,14 @@ parseAdditionalExp = do
 parseTerm :: Parser Term
 parseTerm = do
     f <- parseFactor
-    symbol "*"
+    symbol times
     t <- parseTerm
-    return (BinaryTerm f "*" t)
+    return (BinaryTerm f times t)
     <|> do
     f <- parseFactor
-    symbol "/"
+    symbol divides
     t <- parseTerm
-    return (BinaryTerm f "/" t)
+    return (BinaryTerm f divides t)
     <|> do
     f <- parseFactor
     return (SingleFactor f)
@@ -501,34 +501,34 @@ parseTerm = do
 
 parseRelOp :: Parser RelOp
 parseRelOp = do
-    symbol "="
-    return (RelOp "=")
+    symbol equal
+    return (RelOp equal)
     <|> do
-    symbol ">"
-    return (RelOp ">")
+    symbol less
+    return (RelOp less)
     <|> do
-    symbol ">="
-    return (RelOp ">=")
+    symbol lesseq
+    return (RelOp lesseq)
     <|> do
-    symbol "<"
-    return (RelOp "<")
+    symbol greater
+    return (RelOp greater)
     <|> do
-    symbol "<="
-    return (RelOp "<=")
+    symbol greatereq
+    return (RelOp greatereq)
     <|> do
-    symbol "!="
-    return (RelOp "!=")
+    symbol nequal
+    return (RelOp nequal)
 
 parseLogOp :: Parser LogOp
 parseLogOp = do
-    symbol "&&"
-    return (LogOp "&&")
+    symbol logicalAnd
+    return (LogOp logicalAnd)
     <|> do
-    symbol "||"
-    return (LogOp "||")
+    symbol logicalOr
+    return (LogOp logicalOr)
     <|> do
-    symbol "^^"
-    return (LogOp "^^")
+    symbol logicalXor
+    return (LogOp logicalXor)
 
 parseCondition :: Parser Condition
 parseCondition = do
