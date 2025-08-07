@@ -222,8 +222,10 @@ evalType (TypeIdentifer (Identifier ty)) = do
 
 evalStatementList :: StatementList -> Interpreter ()
 evalStatementList (ComplexStatement stmt stmtList) = do
-    evalStatement stmt
-    evalStatementList stmtList
+    g <- evalStatement stmt
+    case g of 
+        Left () -> evalStatementList stmtList
+        Right val -> return val
 evalStatementList (SimpleStatement stmt) = evalStatement stmt
 
 print' :: Value -> Exp -> Interpreter ()
@@ -251,11 +253,13 @@ print' (ArrayVal (IntVal (Just space))) (SingleExp "" (SingleFactor (FactorLValu
             printArray (address + 1) (space - 1)
 print' v _ = throwError ("Error in print: " ++ show v)
 
-evalStatement :: Statement -> Interpreter ()
+evalStatement :: Statement -> Interpreter Either () Value
 evalStatement (WriteStatement exp) = do
     val <- evalExp exp
     print' val exp
-
+evalStatement (ReturnStatement assign) = do
+    eassign <- evalAssignable
+    return $ Left eassign
 evalStatement (IfStatement cond stat1 stat2) = do
     val <- evalCondition cond
     case (val) of
