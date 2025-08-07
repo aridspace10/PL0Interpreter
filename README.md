@@ -30,7 +30,7 @@ VarDecl → IDENTIFIER COLON TypeIdentifier SEMICOLON
 
 ProcedureDef → ProcedureHead EQUALS Block SEMICOLON
 
-ProcedureHead → KW PROCEDURE IDENTIFIER LPAREN ParametersList RPAREN
+ProcedureHead → KW PROCEDURE IDENTIFIER LPAREN ParametersList RPAREN ARROW Type
 
 ParametersList → [Parameter] { SEMICOLON Parameter}
 
@@ -41,7 +41,7 @@ CompoundStatement → KW BEGIN StatementList KW END
 StatementList → Statement {SEMICOLON Statement}
 
 Statement → Assignment | CallStatement | ReadStatement | WriteStatement|
-WhileStatement | IfStatement | ForStatement | CompoundStatement
+WhileStatement | IfStatement | ForStatement | ReturnStatement | CompoundStatement
 
 ForStatement → KW_FOR LPAREN ForHeader RPAREN KW_DO Statement
 
@@ -54,6 +54,8 @@ AssignmentOperators → ASSIGN | PLUSEQUAL | MINUSEQUALS
 Assignables → CallStatement 
             | kwNew TypeIdentifer lparen Constant rparen
             | Condition
+
+ReturnStatement → KW_RETURN Assignable
 
 CallStatement → KW CALL IDENTIFIER LPAREN CallParamList RPAREN
 
