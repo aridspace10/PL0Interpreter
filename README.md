@@ -47,13 +47,9 @@ ForStatement → KW_FOR LPAREN ForHeader RPAREN KW_DO Statement
 
 ForHeader → [Assignment] SEMICOLON [Condition] SEMICOLON [Exp]
 
-Assignment → LValue AssignmentOperators Assignables
+Assignment → LValue AssignmentOperators Condition
 
 AssignmentOperators → ASSIGN | PLUSEQUAL | MINUSEQUALS
-
-Assignables → CallStatement 
-            | kwNew TypeIdentifer lparen Constant rparen
-            | Condition
 
 ReturnStatement → KW_RETURN Assignable
 
@@ -85,6 +81,7 @@ Factor → LPAREN Condition RPAREN
         | NUMBER 
         | LValue
         | ArrayLiteral
+        | CallStatement
 
 ArrayLiteral  → LBRACKET [ Exp { COMMA Exp } ] RBRACKET
 
