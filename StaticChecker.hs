@@ -279,6 +279,7 @@ checkFactor :: Factor -> StaticChecker AssignedType
 checkFactor (FactorNumber _) = return IntType
 checkFactor (FactorLValue lval) = checkLValue lval
 checkFactor (FactorParen cond) = checkCondition cond
+checkFactor (FactorCall (CallStatement (Identifier id) _)) = lookupType id
 checkFactor (ArrayLiteral (exp: exps)) = do
     ty <- checkExp exp
     checkArray exps ty

@@ -12,8 +12,7 @@ import Control.Monad.Except
 import qualified Data.Map as Map
 import qualified Data.Vector as V
 import Grammer
-import Grammer (AssignOperator(AssignOperator), Assignables (AssignedCondition))
-import StaticChecker (checkCondition)
+import Grammer (Factor(FactorCall))
 
 type Address       = Int
 type MemoryMapping = Map.Map String Address
@@ -141,6 +140,7 @@ evalConstant (ConstIdentifier id) = evalIdentifier id
 evalProgram :: Program -> Interpreter ()
 evalProgram (Program blk) = do
     evalBlock blk
+    return ()
 
 evalBlock :: Block -> Interpreter (Either () Value)
 evalBlock (Block decs cmpStmt) = do
@@ -226,8 +226,12 @@ evalStatementList (ComplexStatement stmt stmtList) = do
     g <- evalStatement stmt
     case g of 
         Left () -> evalStatementList stmtList
-        Right val -> return val
-evalStatementList (SimpleStatement stmt) = evalStatement stmt
+        Right val -> return (Right val)
+evalStatementList (SimpleStatement stmt) = do
+    g <- evalStatement stmt
+    case g of 
+        Left () -> return (Left ())
+        Right val -> return (Right val)
 
 print' :: Value -> Exp -> Interpreter ()
 print' (IntVal Nothing) _ = liftIO $ putStr ("null")
@@ -259,9 +263,9 @@ evalStatement (WriteStatement exp) = do
     val <- evalExp exp
     print' val exp
     return (Left ())
-evalStatement (ReturnStatement assign) = do
-    eassign <- evalAssignable
-    return $ Right eassign
+evalStatement (ReturnStatement cond) = do
+    econd <- evalCondition cond
+    return $ Right econd
 evalStatement (IfStatement cond stat1 stat2) = do
     val <- evalCondition cond
     case (val) of
@@ -282,13 +286,13 @@ evalStatement (WhileStatement cond stat) = do
                     else return (Left ())
                 _ -> return (Left ())
         _ -> throwError ("Big Boy Problem")
-evalStatement (Assignment lval (AssignOperator op) assign) = do
-    eassign <- evalAssignable assign
+evalStatement (Assignment lval (AssignOperator op) cond) = do
+    econd <- evalCondition cond
     case lval of
         (LValue (Identifier id) []) -> do
             case op of
                 ":=" -> do
-                    case eassign of
+                    case econd of
                         (ArrayContent values) -> do
                             val <- lookupVar id
                             case val of
@@ -301,11 +305,11 @@ evalStatement (Assignment lval (AssignOperator op) assign) = do
                                         arrayBuild (address + 1) values
                                         return (Left ())
                         _ -> do
-                            assignVar id eassign
+                            assignVar id econd
                             return (Left ())
                 _ -> do
                     val <- lookupVar id
-                    case (val, eassign) of
+                    case (val, econd) of
                         (IntVal (Just lval), IntVal (Just rval)) -> do
                             case op of
                                 "-=" -> assignVar id (IntVal $ Just (lval - rval))
@@ -317,10 +321,10 @@ evalStatement (Assignment lval (AssignOperator op) assign) = do
             (IntVal (Just c)) <- evalConstant const
             let address = a + c + 1
             case op of
-                ":=" -> assignMemory address eassign
+                ":=" -> assignMemory address econd
                 _ -> do
                     val <- accessMemory address
-                    case (val, eassign) of
+                    case (val, econd) of
                         (IntVal (Just lval), IntVal (Just rval)) -> do
                             case op of
                                 "-=" -> assignMemory address (IntVal $ Just (lval - rval))
@@ -335,8 +339,8 @@ evalStatement (CallStatement (Identifier id) (CallParamList params)) = do
     put env {varEnv = vEnv}
     return g
 evalStatement (CompoundStatement stmtList) = do
-    evalStatementList stmtList
-    return (Left ())
+    g <- evalStatementList stmtList
+    return g
 evalStatement (ForStatement (ForHeader assign cond expr) stmt) = do
     evalStatement assign
     case assign of
@@ -363,14 +367,6 @@ evalStatement (ArrayCreation (LValue (Identifier id) cs) _ const) = do
             put env { varEnv = newVEnv }
             return (Left ())
 evalStatement stuff = throwError ("Compiler Error in EvalStatement: " ++ show stuff)
-
-evalAssignable :: Assignables -> Interpreter Value
-evalAssignable (AssignedCondition cond) = evalCondition cond
-evalAssignable (AssignedCall call) = do
-    g <- evalStatement call
-    case g of
-        Left () -> throwError "Requires something returned from function"
-        Right val -> return val
 
 unassignParams :: Params -> Interpreter ()
 unassignParams [] = return ()
@@ -525,6 +521,11 @@ evalFactor :: Factor -> Interpreter Value
 evalFactor (FactorLValue lval) = evalLValue lval
 evalFactor (FactorNumber num) = return (IntVal $ Just $ fromIntegral num)
 evalFactor (FactorParen cond) = evalCondition cond
+evalFactor (FactorCall call) = do
+    g <- evalStatement call
+    case g of
+        Left _ -> throwError "Compiler Error in evalFactor"
+        Right val -> return val
 evalFactor (ArrayLiteral exps) = do
     values <- mapM evalExp exps  -- [Exp] -> Interpreter [Value]
     return $ ArrayContent values
