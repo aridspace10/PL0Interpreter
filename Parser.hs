@@ -561,10 +561,7 @@ parseRelCondition = do
 
 
 parseFactor :: Parser Factor
-parseFactor =
-        (FactorNumber <$> number)
-    <|> (FactorLValue <$> parseLValue)
-    <|> do
+parseFactor = do
         symbol lparen
         cond <- parseCondition
         symbol rparen
@@ -578,6 +575,8 @@ parseFactor =
     <|> do
         call <- parseCallStatement
         return (FactorCall call)
+    <|> (FactorNumber <$> number)
+    <|> (FactorLValue <$> parseLValue)
     where
         parseManyExp = do
             symbol ","
