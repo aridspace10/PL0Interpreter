@@ -12,7 +12,6 @@ import Control.Monad.Except
 import qualified Data.Map as Map
 import qualified Data.Vector as V
 import Grammer
-import Grammer (Factor(FactorCall))
 
 type Address       = Int
 type MemoryMapping = Map.Map String Address
@@ -256,7 +255,19 @@ print' (ArrayVal (IntVal (Just space))) (SingleExp "" (SingleFactor (FactorLValu
             print' temp Empty
             liftIO $ putStr ","
             printArray (address + 1) (space - 1)
+print' (ArrayContent vals) _ = do
+    liftIO $ putStr "["
+    printArray vals
+    liftIO $ putStr "]"
 print' v _ = throwError ("Error in print: " ++ show v)
+
+printArray (val:[]) = do
+    print' val Empty
+    return ()
+printArray (val:vals) = do
+    print' val Empty
+    liftIO $ putStr ", "
+    printArray vals
 
 evalStatement :: Statement -> Interpreter (Either () Value)
 evalStatement (WriteStatement exp) = do
@@ -385,7 +396,6 @@ assignParams (given: givens) ((id, ty): params) = do
         True -> do 
             case (ty, econd) of
                 (ArrayVal _, ArrayContent values) -> do
-                    liftIO $ print values
                     env <- get
                     let vEnv = varEnv env
                     let address = nextFree vEnv
