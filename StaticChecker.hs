@@ -201,22 +201,20 @@ checkAccessing (ty) (c:cs) = throwError "Int is not subscriptable"
 checkStatement :: Statement -> StaticChecker ()
 checkStatement (Assignment lval (AssignOperator op) cond) = do
     checkLValue lval
-    condType <- checkAssignable cond
+    condType <- checkCondition cond
     case (lval) of
         (LValue (Identifier id) const) -> do
             idType <- lookupType id
             targetTy <- checkAccessing idType const
-            case cond of
-                (AssignedCondition _) -> do
+            case condType of
+                (ProcedureType innerty) -> do
+                    if innerty == targetTy
+                    then return ()
+                    else throwError ("Cannot Assign Procedure with return type " ++ (show condType) ++ " to " ++ (show targetTy))
+                _ ->
                     if condType == targetTy
                     then return ()
                     else throwError ("Cannot Assign " ++ (show condType) ++ " to " ++ (show targetTy))
-                (AssignedCall _) -> do
-                    case condType of
-                        (ProcedureType innerty) -> do
-                            if innerty == targetTy
-                            then return ()
-                            else throwError ("Cannot Assign Procedure with return type " ++ (show condType) ++ " to " ++ (show targetTy))
         _ -> throwError "IDK how"
 checkStatement (ArrayCreation lval ty const) = do
     let e = getConst const
@@ -243,10 +241,6 @@ checkStatement (CallStatement id params) = return ()
 checkStatement (ForStatement header stmt) = do
     checkStatement stmt
 checkStatement (ReturnStatement assign) = return ()
-
-checkAssignable :: Assignables -> StaticChecker AssignedType
-checkAssignable (AssignedCall (CallStatement (Identifier id) params)) = lookupType id
-checkAssignable (AssignedCondition cond) = checkCondition cond
 
 checkLValue :: LValue -> StaticChecker AssignedType
 checkLValue (LValue (Identifier id) consts) = 
