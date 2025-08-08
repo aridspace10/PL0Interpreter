@@ -324,16 +324,8 @@ parseAssignment = do
     <|> do
     lval <- parseLValue
     op <- parseAssignmentOperator
-    assignable <- parseAssignable
-    return (Assignment lval op assignable)
-
-parseAssignable :: Parser Assignables
-parseAssignable = do
-    call <- parseCallStatement
-    return (AssignedCall call)
-    <|> do
     cond <- parseCondition
-    return (AssignedCondition cond)
+    return (Assignment lval op cond)
 
 parseAssignmentOperator :: Parser AssignOperator
 parseAssignmentOperator = do
@@ -410,8 +402,8 @@ parseStatement =
 parseReturnStatement :: Parser Statement
 parseReturnStatement = do
     symbol kwReturn
-    assign <- parseAssignable
-    return (ReturnStatement assign)
+    cond <- parseCondition
+    return (ReturnStatement cond)
 
 parseForStatement :: Parser Statement
 parseForStatement = do
@@ -583,6 +575,9 @@ parseFactor =
         rcond <- many parseManyExp
         symbol rbracket
         return (ArrayLiteral (fcond : rcond))
+    <|> do
+        call <- parseCallStatement
+        return (FactorCall call)
     where
         parseManyExp = do
             symbol ","
