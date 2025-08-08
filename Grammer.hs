@@ -30,7 +30,7 @@ data ParametersList = ParametersList [Parameter] deriving Show
 data Parameter = Parameter Identifier Type deriving Show
 data StatementList = ComplexStatement Statement StatementList | SimpleStatement Statement | EmptyStatement deriving Show
 data Statement =
-    Assignment LValue AssignOperator Assignables
+    Assignment LValue AssignOperator Condition
     | ArrayCreation LValue Type Constant
     | CallStatement Identifier CallParamList
     | ReadStatement LValue
@@ -38,11 +38,8 @@ data Statement =
     | WhileStatement Condition Statement
     | IfStatement Condition Statement Statement
     | ForStatement ForHeader Statement
-    | ReturnStatement Assignables
+    | ReturnStatement Condition
     | CompoundStatement StatementList deriving Show
-
-data Assignables = AssignedCall Statement
-                   | AssignedCondition Condition deriving Show
 
 data AssignOperator = AssignOperator String deriving Show
 
@@ -80,6 +77,7 @@ data Factor =
     | FactorLValue LValue
     | FactorParen Condition
     | ArrayLiteral [Exp]
+    | FactorCall Statement
     deriving (Show)
 
 data LValue = LValue Identifier [Constant] deriving (Show)
