@@ -257,8 +257,9 @@ print' (ArrayVal (IntVal (Just space))) (SingleExp "" (SingleFactor (FactorLValu
             printArray (address + 1) (space - 1)
 print' (ArrayContent vals) _ = do
     liftIO $ putStr "["
+    liftIO $ print vals
     printArray vals
-    liftIO $ putStr "]"
+    liftIO $ putStr "]\n"
 print' v _ = throwError ("Error in print: " ++ show v)
 
 printArray (val:[]) = do
