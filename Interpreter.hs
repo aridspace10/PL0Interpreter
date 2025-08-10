@@ -144,8 +144,7 @@ evalProgram (Program blk) = do
 evalBlock :: Block -> Interpreter (Either () Value)
 evalBlock (Block decs cmpStmt) = do
     evalDeclarationList decs 
-    g <- evalStatement cmpStmt
-    return g
+    evalStatement cmpStmt
 
 evalDeclarationList :: DecleratonList -> Interpreter ()
 evalDeclarationList (DecleratonList []) = return ()
