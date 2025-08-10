@@ -2,5 +2,5 @@ var a: array(int);
 begin
     a := malloc(5);
     a[0] := 1;
-    write a[0]; // [1, null, null, null, null]
+    write a; // [1, null, null, null, null]
 end
