@@ -42,10 +42,15 @@ data Value = IntVal (Maybe Int)
            | BoolVal (Maybe Bool)
            | ArrayContent [Value]
            | ArrayVal Value
+           | ReferenceVal String Value
            | Uninitialized
            | Undefined  
            | NotUsed
            deriving (Show, Eq, Data)
+
+type Builtin = [Condition] -> Interpreter Value
+builtinMap :: Map.Map String Builtin
+builtinMap = Map.fromList [ ("malloc", builtin_malloc), ("length", builtin_length)]
 
 sameConstructor :: Value -> Value -> Bool
 sameConstructor (ArrayContent _) (ArrayVal _) = True
@@ -331,13 +336,16 @@ evalStatement (Assignment lval (AssignOperator op) cond) = do
                                 "+=" -> assignMemory address (IntVal $ Just (lval + rval))
             return (Left ())
 evalStatement (CallStatement (Identifier id) (CallParamList params)) = do
-    pro <- lookupProc id
-    assignParams params (parameters pro)
-    env <- get 
-    let vEnv = varEnv env
-    g <- evalBlock (body pro)
-    put env {varEnv = vEnv}
-    return g
+    case Map.lookup id builtinMap of
+        Just func -> func params
+        Nothing -> do
+            pro <- lookupProc id
+            assignParams params (parameters pro)
+            env <- get 
+            let vEnv = varEnv env
+            g <- evalBlock (body pro)
+            put env {varEnv = vEnv}
+            return g
 evalStatement (CompoundStatement stmtList) = do
     g <- evalStatementList stmtList
     return g
