@@ -350,9 +350,7 @@ evalStatement (CallStatement (Identifier id) (CallParamList params)) = do
     g <- evalBlock (body pro)
     put env {varEnv = vEnv}
     return g
-evalStatement (CompoundStatement stmtList) = do
-    g <- evalStatementList stmtList
-    return g
+evalStatement (CompoundStatement stmtList) = evalStatementList stmtList
 evalStatement (ForStatement (ForHeader assign cond expr) stmt) = do
     evalStatement assign
     case assign of
