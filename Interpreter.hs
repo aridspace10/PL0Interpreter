@@ -13,7 +13,6 @@ import Control.Monad.Except
 import qualified Data.Map as Map
 import qualified Data.Vector as V
 import Grammer
-import Grammer (Factor(FactorCall))
 
 type Address       = Int
 type MemoryMapping = Map.Map String Address
@@ -377,7 +376,19 @@ evalStatement (ArrayCreation (LValue (Identifier id) cs) _ const) = do
             return (Left ())
 evalStatement stuff = throwError ("Compiler Error in EvalStatement: " ++ show stuff)
 
-
+builtin_length :: [Condition] -> Interpreter Value
+builtin_length [] = throwError "Expecting an argument"
+builtin_length [cond] = do
+    case cond of
+        SimpleCondition (SimpleRelCondition (SingleExp "" (SingleFactor (FactorLValue (LValue (Identifier id) []))))) -> do
+            address <- getAddress id
+            val <- accessMemory address
+            case val of
+                (ArrayVal (IntVal Nothing)) -> return (IntVal (Just 0))
+                (ArrayVal val) -> return val
+                _ -> throwError ("Type of " ++ id ++ " can not work with length()")
+        _ -> throwError "Unexpected a value given to length() function" 
+builtin_length conds = throwError ("Expecting 1 argument, instead receieved" ++ (length params + 1))
 
 unassignParams :: Params -> Interpreter ()
 unassignParams [] = return ()
