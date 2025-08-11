@@ -261,7 +261,21 @@ print' (ArrayVal (IntVal (Just space))) (SingleExp "" (SingleFactor (FactorLValu
             print' temp Empty
             liftIO $ putStr ","
             printArray (address + 1) (space - 1)
+print' (ArrayContent vals) _ = do
+    liftIO $ putStr "["
+    printArray vals
+    liftIO $ putStr "]\n"
 print' v _ = throwError ("Error in print: " ++ show v)
+
+printArray :: [Value] -> Interpreter ()
+printArray [] = return ()
+printArray (val:[]) = do
+    print' val Empty
+    return ()
+printArray (val:vals) = do
+    print' val Empty
+    liftIO $ putStr ", "
+    printArray vals
 
 evalStatement :: Statement -> Interpreter (Either () Value)
 evalStatement (WriteStatement exp) = do
