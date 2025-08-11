@@ -100,7 +100,7 @@ getArrayContent :: Int -> Int -> [Value] -> Interpreter Value
 getArrayContent _ 0 vals = return (ArrayContent vals)
 getArrayContent address left vals = do
     val <- accessMemory address
-    getArrayContent (address + 1) (left - 1) (val : vals)
+    getArrayContent (address + 1) (left - 1) (vals ++ [val])
 
 lookupVar :: String -> Interpreter Value
 lookupVar name = do
