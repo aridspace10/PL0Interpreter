@@ -309,6 +309,26 @@ evalStatement (Assignment lval (AssignOperator op) cond) = do
                                         address <- getAddress id
                                         arrayBuild (address + 1) values
                                         return (Left ())
+                        (ReferenceVal str val) -> do
+                            case (str, val) of
+                                ("malloc", IntVal (Just size)) -> do
+                                    t <- lookupVar id
+                                    case t of
+                                        (ArrayVal ty) -> do
+                                            initaladd <- getAddress id
+                                            assignMemory initaladd NotUsed
+                                            env <- get
+                                            let vEnv = varEnv env
+                                            let address = nextFree vEnv
+                                            assignAddress id address
+                                            assignMemory address (ArrayVal (IntVal (Just size)))
+                                            address <- assignArray ty size address
+                                            env' <- get
+                                            let vEnv' = varEnv env'
+                                            let newVEnv = vEnv' {nextFree = address + 1 }
+                                            put env { varEnv = newVEnv }
+                                            return (Left ())
+                                        _ -> throwError "DO LATER"
                         _ -> do
                             assignVar id econd
                             return (Left ())
@@ -337,7 +357,9 @@ evalStatement (Assignment lval (AssignOperator op) cond) = do
             return (Left ())
 evalStatement (CallStatement (Identifier id) (CallParamList params)) = do
     case Map.lookup id builtinMap of
-        Just func -> func params
+        Just func -> do
+            val <- func params
+            return (Right val)
         Nothing -> do
             pro <- lookupProc id
             assignParams params (parameters pro)
@@ -516,9 +538,11 @@ evalExp (SingleExp str term) = do
                 if str == "-"
                 then return (IntVal $ Just (-e))
                 else return (IntVal $ Just e)
+            _ -> throwError (show term)
         (BoolVal e) -> return (BoolVal e)
         (ArrayContent e) -> return (ArrayContent e)
         (ArrayVal e) -> return (ArrayVal e)
+        (ReferenceVal str val) -> return (ReferenceVal str val)
         _ -> throwError $ (show val ++ show env)
 evalExp (BinaryExp str term exp) = do
     eval <- evalTerm term
