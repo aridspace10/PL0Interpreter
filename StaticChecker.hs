@@ -293,7 +293,7 @@ checkArray (exp : exps) ty = do
     else throwError "Array is not all of one type"
 
 nullScope :: Scope
-nullScope = Scope Map.empty [] nullScope 
+nullScope = Scope (Map.fromList [("malloc", ProcedureType NoneType), ("length", ProcedureType IntType)]) [] nullScope 
 
 runStaticChecker :: StaticChecker a -> Scope -> IO (Either String (a, Scope))
 runStaticChecker action scope = runExceptT (runStateT action scope)
