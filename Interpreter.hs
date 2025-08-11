@@ -149,9 +149,8 @@ evalProgram (Program blk) = do
 
 evalBlock :: Block -> Interpreter (Either () Value)
 evalBlock (Block decs cmpStmt) = do
-    evalDeclarationList decs
-    g <- evalStatement cmpStmt
-    return g
+    evalDeclarationList decs 
+    evalStatement cmpStmt
 
 evalDeclarationList :: DecleratonList -> Interpreter ()
 evalDeclarationList (DecleratonList []) = return ()
@@ -455,7 +454,6 @@ assignParams (given: givens) ((id, ty): params) = do
         True -> do
             case (ty, econd) of
                 (ArrayVal _, ArrayContent values) -> do
-                    liftIO $ print values
                     env <- get
                     let vEnv = varEnv env
                     let address = nextFree vEnv
@@ -530,19 +528,18 @@ evalRelationalCondition (ComplexRelCondition lexp (RelOp op) rexp) = do
   elexp <- evalExp lexp
   erexp <- evalExp rexp
   case (elexp, erexp) of
-    (IntVal ml, IntVal mr) -> case (ml, mr) of
-        (Just l, Just r) -> case op of
-            ">"  -> return $ BoolVal $ Just (l > r)
-            ">=" -> return $ BoolVal $ Just (l >= r)
-            "<"  -> return $ BoolVal $ Just (l < r)
-            "<=" -> return $ BoolVal $ Just (l <= r)
-            "!=" -> return $ BoolVal $ Just (l /= r)
-            "=" -> return $ BoolVal $ Just (l == r)
-            _    -> throwError ("Unknown relational operator: " ++ op)
+    (IntVal (Just l), IntVal (Just r)) -> case op of       
+        ">"  -> return $ BoolVal $ Just (l > r)
+        ">=" -> return $ BoolVal $ Just (l >= r)
+        "<"  -> return $ BoolVal $ Just (l < r)
+        "<=" -> return $ BoolVal $ Just (l <= r)
+        "!=" -> return $ BoolVal $ Just (l /= r)
+        "=" -> return $ BoolVal $ Just (l == r)
+        _    -> throwError ("Unknown relational operator: " ++ op)
     (BoolVal l, BoolVal r) -> case op of
-      "==" -> return $ BoolVal $ Just (l == r)
-      "!=" -> return $ BoolVal $ Just (l /= r)
-      _    -> throwError ("Unsupported operator for boolean values: " ++ op)
+        "==" -> return $ BoolVal $ Just (l == r)
+        "!=" -> return $ BoolVal $ Just (l /= r)
+        _    -> throwError ("Unsupported operator for boolean values: " ++ op)
     _ -> throwError "Type error in relational condition"
 
 evalExp :: Exp -> Interpreter Value
