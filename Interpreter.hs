@@ -322,7 +322,7 @@ evalStatement (Assignment lval (AssignOperator op) cond) = do
                                             let address = nextFree vEnv
                                             assignAddress id address
                                             assignMemory address (ArrayVal (IntVal (Just size)))
-                                            address <- assignArray ty size address
+                                            address <- assignArray ty size (address + 1)
                                             env' <- get
                                             let vEnv' = varEnv env'
                                             let newVEnv = vEnv' {nextFree = address + 1 }
