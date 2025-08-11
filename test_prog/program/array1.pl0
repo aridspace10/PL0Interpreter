@@ -2,5 +2,6 @@ var a: array(int);
 begin
     a := call malloc(5);
     a[0] := 1;
-    write a
+    write a;
+    write call length(a)
 end

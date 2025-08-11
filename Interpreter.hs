@@ -343,6 +343,9 @@ evalStatement (Assignment lval (AssignOperator op) cond) = do
                                             put env { varEnv = newVEnv }
                                             return (Left ())
                                         _ -> throwError "DO LATER"
+                                ("length", IntVal (Just size)) -> do
+                                    assignVar id (IntVal (Just size))
+                                    return (Left ())
                         _ -> do
                             assignVar id econd
                             return (Left ())
