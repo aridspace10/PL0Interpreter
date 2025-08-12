@@ -45,7 +45,8 @@ data AssignOperator = AssignOperator String deriving Show
 
 data CallParamList = CallParamList [Condition] deriving Show
 
-data ForHeader = ForHeader Statement Condition Exp deriving Show
+data ForHeader = ForEach Identifier Identifier
+                | ForRegular Statement Condition Exp deriving Show
 
 data Exp =
     SingleExp String Term
