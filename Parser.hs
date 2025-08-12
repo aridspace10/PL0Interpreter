@@ -408,21 +408,26 @@ parseReturnStatement = do
 parseForStatement :: Parser Statement
 parseForStatement = do
     symbol kwFor
-    symbol lparen
     header <- parseForHeader
-    symbol rparen
     symbol kwDo
     stat <- parseStatement
     return (ForStatement header stat)
 
 parseForHeader :: Parser ForHeader
 parseForHeader = do
+    symbol lparen
     assign <- parseAssignment 
     symbol semicolon
     cond <- parseCondition
     symbol semicolon
     exp <- parseExp
-    return (ForHeader assign cond exp)
+    symbol rparen
+    return (ForRegular assign cond exp)
+    <|> do
+    lid <- identifier
+    symbol "in"
+    rid <- identifier
+    return (ForEach lid rid)
 
 peekSymbol :: String -> Parser Bool
 peekSymbol s = P $ \cs ->
