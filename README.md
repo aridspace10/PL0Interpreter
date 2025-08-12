@@ -43,9 +43,10 @@ StatementList → Statement {SEMICOLON Statement}
 Statement → Assignment | CallStatement | ReadStatement | WriteStatement|
 WhileStatement | IfStatement | ForStatement | ReturnStatement | CompoundStatement
 
-ForStatement → KW_FOR LPAREN ForHeader RPAREN KW_DO Statement
+ForStatement → KW_FOR ForHeader KW_DO Statement
 
-ForHeader → [Assignment] SEMICOLON [Condition] SEMICOLON [Exp]
+ForHeader → LPAREN [Assignment] SEMICOLON [Condition] SEMICOLON [Exp] RPAREN
+            | Identifer kwIN Identifer
 
 Assignment → LValue AssignmentOperators Condition
 
