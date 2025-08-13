@@ -13,6 +13,7 @@ import Control.Monad.Except
 import qualified Data.Map as Map
 import qualified Data.Vector as V
 import Grammer
+import Grammer (ForHeader(ForRegular))
 
 type Address       = Int
 type MemoryMapping = Map.Map String Address
@@ -387,7 +388,7 @@ evalStatement (CallStatement (Identifier id) (CallParamList params)) = do
 evalStatement (CompoundStatement stmtList) = do
     g <- evalStatementList stmtList
     return g
-evalStatement (ForStatement (ForHeader assign cond expr) stmt) = do
+evalStatement (ForStatement (ForRegular assign cond expr) stmt) = do
     evalStatement assign
     case assign of
         (Assignment (LValue (Identifier id) _) (AssignOperator ":=") _) -> do
