@@ -314,15 +314,6 @@ parseIfStatement = do
 parseAssignment :: Parser Statement
 parseAssignment = do
     lval <- parseLValue
-    symbol assign
-    symbol kwNew
-    ty <- parseTypeIdentifer
-    symbol lparen
-    c <- parseConstant
-    symbol rparen
-    return (ArrayCreation lval ty c)
-    <|> do
-    lval <- parseLValue
     op <- parseAssignmentOperator
     cond <- parseCondition
     return (Assignment lval op cond)
