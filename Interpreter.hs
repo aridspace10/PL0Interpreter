@@ -395,24 +395,6 @@ evalStatement (ForStatement (ForRegular assign cond expr) stmt) = do
             evalForLoop id cond expr stmt
             return (Left ())
         _ -> throwError "Assingment wasn't used"
-evalStatement (ArrayCreation (LValue (Identifier id) cs) _ const) = do
-    val <- lookupVar id
-    add <- getAddress id
-    assignMemory add NotUsed
-    space <- evalConstant const
-    env <- get
-    let vEnv = varEnv env
-    let address = nextFree vEnv
-    case (val, space) of
-        (ArrayVal ty, IntVal (Just space')) -> do
-            assignAddress id address
-            assignMemory address (ArrayVal (IntVal (Just space')))
-            address <- assignArray ty space' (address + 1)
-            env' <- get
-            let vEnv' = varEnv env'
-            let newVEnv = vEnv' {nextFree = address + 1 }
-            put env { varEnv = newVEnv }
-            return (Left ())
 evalStatement stuff = throwError ("Compiler Error in EvalStatement: " ++ show stuff)
 
 builtin_length :: [Condition] -> Interpreter Value
