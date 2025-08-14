@@ -31,7 +31,6 @@ data Parameter = Parameter Identifier Type deriving Show
 data StatementList = ComplexStatement Statement StatementList | SimpleStatement Statement | EmptyStatement deriving Show
 data Statement =
     Assignment LValue AssignOperator Condition
-    | ArrayCreation LValue Type Constant
     | CallStatement Identifier CallParamList
     | ReadStatement LValue
     | WriteStatement Exp
