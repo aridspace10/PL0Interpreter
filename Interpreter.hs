@@ -385,9 +385,7 @@ evalStatement (CallStatement (Identifier id) (CallParamList params)) = do
             g <- evalBlock (body pro)
             put env {varEnv = vEnv}
             return g
-evalStatement (CompoundStatement stmtList) = do
-    g <- evalStatementList stmtList
-    return g
+evalStatement (CompoundStatement stmtList) = do evalStatementList stmtList
 evalStatement (ForStatement (ForRegular assign cond expr) stmt) = do
     evalStatement assign
     case assign of
@@ -409,7 +407,7 @@ builtin_length [cond] = do
                 (ArrayVal val) -> return val
                 _ -> throwError ("Type of " ++ id ++ " can not work with length()")
         _ -> throwError "Unexpected a value given to length() function" 
-builtin_length conds = throwError ("Expecting 1 argument, instead receieved" ++ (show $ length conds + 1))
+builtin_length conds = throwError ("Expecting 1 argument, instead receieved" ++ show $ length conds + 1)
 
 builtin_malloc :: [Condition] -> Interpreter Value
 builtin_malloc [] = throwError "Expecting an argument"
@@ -418,7 +416,7 @@ builtin_malloc [cond] = do
     case econd of
         IntVal (Just val) -> return (ReferenceVal "malloc" (IntVal (Just val)))
         _ -> throwError ("Unable to malloc with " ++ show econd)
-builtin_malloc conds = throwError ("Expecting 1 argument, instead receieved" ++ (show $ length conds + 1))
+builtin_malloc conds = throwError ("Expecting 1 argument, instead receieved" ++ show $ length conds + 1)
 
 unassignParams :: Params -> Interpreter ()
 unassignParams [] = return ()
