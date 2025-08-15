@@ -186,6 +186,9 @@ parseNum = do
 
 parseConstant :: Parser Constant
 parseConstant = do
+    arr <- parseArrayLiteral
+    return (ConstArray arr)
+    <|> do
     num <- parseNum
     return (ConstNumber num)
     <|> do
@@ -563,11 +566,7 @@ parseFactor = do
         symbol rparen
         return (FactorParen cond)
     <|> do
-        symbol lbracket
-        fcond <- parseExp
-        rcond <- many parseManyExp
-        symbol rbracket
-        return (ArrayLiteral (fcond : rcond))
+        parseArrayLiteral
     <|> do
         call <- parseCallStatement
         return (FactorCall call)
@@ -577,6 +576,14 @@ parseFactor = do
         parseManyExp = do
             symbol ","
             parseExp
+
+parseArrayLiteral :: Parser Factor
+parseArrayLiteral = do
+    symbol lbracket
+    fcond <- parseExp
+    rcond <- many parseManyExp
+    symbol rbracket
+    return (ArrayLiteral (fcond : rcond))
 
 parseLValue :: Parser LValue
 parseLValue = do
