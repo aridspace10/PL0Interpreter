@@ -13,7 +13,7 @@ import Control.Monad.Except
 import qualified Data.Map as Map
 import qualified Data.Vector as V
 import Grammer
-import Grammer (ForHeader(ForRegular))
+import Grammer (ForHeader(ForRegular), Statement (ForStatement), Identifier)
 
 type Address       = Int
 type MemoryMapping = Map.Map String Address
@@ -393,6 +393,11 @@ evalStatement (ForStatement (ForRegular assign cond expr) stmt) = do
             evalForLoop id cond expr stmt
             return (Left ())
         _ -> throwError "Assingment wasn't used"
+evalStatement (ForStatement (ForEach id arr) stmt) = do
+    earr <- evalIdentifier arr
+    case earr of
+        (ArrayContent vals) -> evalForEachLoop id vals stmt
+        _ -> throwError ("Cannot Iterate over type" ++ show earr)
 evalStatement stuff = throwError ("Compiler Error in EvalStatement: " ++ show stuff)
 
 builtin_length :: [Condition] -> Interpreter Value
@@ -477,6 +482,8 @@ evalForLoop id cond exp stmt = do
                     else return ()
                 _ -> throwError ("Unknown Error")
         _ -> throwError "Condition should evaluate to a bool Value"
+
+evalForEachLoop :: Identifier -> [Value] -> Statement -> Interpreter ()
 
 evalCondition :: Condition -> Interpreter Value
 evalCondition (NotCondition cond) = do
