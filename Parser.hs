@@ -572,10 +572,6 @@ parseFactor = do
         return (FactorCall call)
     <|> (FactorNumber <$> number)
     <|> (FactorLValue <$> parseLValue)
-    where
-        parseManyExp = do
-            symbol ","
-            parseExp
 
 parseArrayLiteral :: Parser Factor
 parseArrayLiteral = do
@@ -584,6 +580,10 @@ parseArrayLiteral = do
     rcond <- many parseManyExp
     symbol rbracket
     return (ArrayLiteral (fcond : rcond))
+    where
+        parseManyExp = do
+            symbol ","
+            parseExp
 
 parseLValue :: Parser LValue
 parseLValue = do
