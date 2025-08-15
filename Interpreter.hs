@@ -484,6 +484,11 @@ evalForLoop id cond exp stmt = do
         _ -> throwError "Condition should evaluate to a bool Value"
 
 evalForEachLoop :: Identifier -> [Value] -> Statement -> Interpreter ()
+evalForEachLoop id [] _ = do
+    add <- getAddress id
+    assignMemory add NotUsed
+    assignAddress id -1
+    return ()
 
 evalCondition :: Condition -> Interpreter Value
 evalCondition (NotCondition cond) = do
