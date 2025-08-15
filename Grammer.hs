@@ -14,6 +14,7 @@ data ConstDef = ConstDef Identifier Constant deriving (Show)
 data Constant
   = ConstNumber Number
   | ConstIdentifier Identifier
+  | ConstArray Factor
   | ConstMinus Constant deriving (Show)
 data TypeDefList = TypeDefList [TypeDef] deriving (Show)
 data TypeDef = TypeDef Identifier Type deriving (Show)
