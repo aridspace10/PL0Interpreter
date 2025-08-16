@@ -394,7 +394,7 @@ evalStatement (ForStatement (ForRegular assign cond expr) stmt) = do
             return (Left ())
         _ -> throwError "Assingment wasn't used"
 evalStatement (ForStatement (ForEach (Identifier id) arr) stmt) = do
-    earr <- evalIdentifier arr
+    earr <- evalLValue arr
     case earr of
         (ArrayContent vals) -> do 
             evalForEachLoop id vals stmt

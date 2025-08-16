@@ -236,6 +236,7 @@ checkStatement (CompoundStatement stmtList) = do
     checkStatementList stmtList
 checkStatement (CallStatement id params) = return ()
 checkStatement (ForStatement header stmt) = do
+    checkForHeader header
     checkStatement stmt
 checkStatement (ReturnStatement assign) = return ()
 

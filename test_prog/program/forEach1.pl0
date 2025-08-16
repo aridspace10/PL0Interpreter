@@ -6,5 +6,5 @@ begin
   sum := 0;
   for num in nums do 
     sum += num;
-  write x
+  write sum
 end
