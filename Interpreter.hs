@@ -13,7 +13,7 @@ import Control.Monad.Except
 import qualified Data.Map as Map
 import qualified Data.Vector as V
 import Grammer
-import Grammer (Identifier(Identifier))
+import Grammer (Identifier(Identifier), Constant (ConstArray))
 
 type Address       = Int
 type MemoryMapping = Map.Map String Address
@@ -142,6 +142,7 @@ evalConstant (ConstNumber (Number op val)) = do
     let eval = fromIntegral val
     if op == "-" then return (IntVal $ Just (-eval)) else return (IntVal $ Just eval)
 evalConstant (ConstIdentifier id) = evalIdentifier id
+evalConstant (ConstArray fact) = evalFactor fact
 
 evalProgram :: Program -> Interpreter ()
 evalProgram (Program blk) = do
