@@ -420,7 +420,7 @@ parseForHeader = do
     <|> do
     lid <- identifier
     symbol "in"
-    rid <- identifier
+    rid <- parseLValue
     return (ForEach lid rid)
 
 peekSymbol :: String -> Parser Bool
