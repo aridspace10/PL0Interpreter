@@ -239,6 +239,18 @@ checkStatement (ForStatement header stmt) = do
     checkStatement stmt
 checkStatement (ReturnStatement assign) = return ()
 
+checkForHeader :: ForHeader -> StaticChecker ()
+checkForHeader (ForRegular assign cond exp) = do
+    case assign of
+        (Assignment lval (AssignOperator op) cond) ->
+            case lval of
+                (LValue (Identifier id) _) -> do
+                    ty <- checkCondition cond
+                    assignVar id ty
+        
+
+
+
 checkLValue :: LValue -> StaticChecker AssignedType
 checkLValue (LValue (Identifier id) consts) = 
     case id of
