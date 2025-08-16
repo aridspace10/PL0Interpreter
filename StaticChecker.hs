@@ -165,6 +165,9 @@ checkConstDef ((ConstDef (Identifier id) const):cds) = do
                 (ConstIdentifier (Identifier otherid)) -> do
                     ty <- lookupType otherid
                     assignVar id ty
+                (ConstArray fact) -> do
+                    ty <- checkFactor fact
+                    assignVar id ty
         _ -> addError (Error 0 ("Reassignment of " ++ id))
     checkConstDef cds
 
