@@ -247,9 +247,11 @@ checkForHeader (ForRegular assign cond exp) = do
                 (LValue (Identifier id) _) -> do
                     ty <- checkCondition cond
                     assignVar id ty
-        
-
-
+checkForHeader (ForEach (Identifier lid) rid) = do
+    erid <- checkLValue rid
+    case erid of
+        ArrType ty -> assignVar lid ty
+        _ -> throwError ("Can't iterate over " ++ show erid)
 
 checkLValue :: LValue -> StaticChecker AssignedType
 checkLValue (LValue (Identifier id) consts) = 
