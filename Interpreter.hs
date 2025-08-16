@@ -13,6 +13,7 @@ import Control.Monad.Except
 import qualified Data.Map as Map
 import qualified Data.Vector as V
 import Grammer
+import Grammer (Identifier(Identifier))
 
 type Address       = Int
 type MemoryMapping = Map.Map String Address
@@ -392,7 +393,7 @@ evalStatement (ForStatement (ForRegular assign cond expr) stmt) = do
             evalForLoop id cond expr stmt
             return (Left ())
         _ -> throwError "Assingment wasn't used"
-evalStatement (ForStatement (ForEach id arr) stmt) = do
+evalStatement (ForStatement (ForEach (Identifier id) arr) stmt) = do
     earr <- evalIdentifier arr
     case earr of
         (ArrayContent vals) -> do 
@@ -413,7 +414,7 @@ builtin_length [cond] = do
                 (ArrayVal val) -> return val
                 _ -> throwError ("Type of " ++ id ++ " can not work with length()")
         _ -> throwError "Unexpected a value given to length() function" 
-builtin_length conds = throwError ("Expecting 1 argument, instead receieved" ++ show $ length conds + 1)
+builtin_length conds = throwError ("Expecting 1 argument, instead receieved" ++ (show $ length conds + 1))
 
 builtin_malloc :: [Condition] -> Interpreter Value
 builtin_malloc [] = throwError "Expecting an argument"
@@ -422,7 +423,7 @@ builtin_malloc [cond] = do
     case econd of
         IntVal (Just val) -> return (ReferenceVal "malloc" (IntVal (Just val)))
         _ -> throwError ("Unable to malloc with " ++ show econd)
-builtin_malloc conds = throwError ("Expecting 1 argument, instead receieved" ++ show $ length conds + 1)
+builtin_malloc conds = throwError ("Expecting 1 argument, instead receieved" ++ (show $ length conds + 1))
 
 unassignParams :: Params -> Interpreter ()
 unassignParams [] = return ()
@@ -484,11 +485,11 @@ evalForLoop id cond exp stmt = do
                 _ -> throwError ("Unknown Error")
         _ -> throwError "Condition should evaluate to a bool Value"
 
-evalForEachLoop :: Identifier -> [Value] -> Statement -> Interpreter ()
+evalForEachLoop :: String -> [Value] -> Statement -> Interpreter ()
 evalForEachLoop id [] _ = do
     add <- getAddress id
     assignMemory add NotUsed
-    assignAddress id -1
+    assignAddress id (-1)
     return ()
 evalForEachLoop id (val:vals) stmt = do
     assignVar id val
