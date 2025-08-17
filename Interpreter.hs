@@ -358,6 +358,8 @@ evalStatement (Assignment lval (AssignOperator op) cond) = do
                                 "-=" -> assignVar id (IntVal $ Just (lval - rval))
                                 "+=" -> assignVar id (IntVal $ Just (lval + rval))
                             return (Left ())
+                        (BoolVal _, _) -> throwError "Can't add anything to a boolean variable"
+                        (_, BoolVal _) -> throwError "Can't add to variable a boolean value"
             return (Left ())
         (LValue (Identifier id) (const:[])) -> do
             a <- getAddress id
