@@ -51,7 +51,7 @@ data Value = IntVal (Maybe Int)
 
 type Builtin = [Condition] -> Interpreter Value
 builtinMap :: Map.Map String Builtin
-builtinMap = Map.fromList [ ("malloc", builtin_malloc), ("length", builtin_length)]
+builtinMap = Map.fromList [ ("malloc", builtin_malloc), ("length", builtin_length), ("realloc", builtin_realloc)]
 
 sameConstructor :: Value -> Value -> Bool
 sameConstructor (ArrayContent _) (ArrayVal _) = True
