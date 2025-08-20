@@ -8,6 +8,7 @@ import Control.Monad.Except
 import qualified Data.Map as Map
 import GHC.Natural ( Natural )
 import Grammer
+import Grammer (Factor(CharLiteral))
 
 data Error = Error Natural String
 data AssignedType = IntType 
@@ -160,6 +161,8 @@ checkVarDef ((VarDecl (Identifier id) ty):vds) = do
                     case tid' of
                         "int" -> assignVar id IntType
                         "bool" -> assignVar id BoolType
+                        "string" -> assignVar id StrType
+                        "char" -> assignVar id CharType
                         _ -> assignVar id (RefType tid')
         (ArrayType ty) -> do
             g <- checkType ty
@@ -252,7 +255,7 @@ checkTerm (BinaryTerm fact op term) = return IntType
 
 checkFactor :: Factor -> StaticChecker AssignedType
 checkFactor (String _) = return StrType
-checkFactor (Char _) = return CharType
+checkFactor (CharLiteral _) = return CharType
 checkFactor (FactorNumber _) = return IntType
 checkFactor (FactorLValue lval) = checkLValue lval
 checkFactor (FactorParen cond) = checkCondition cond
