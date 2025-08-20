@@ -1,0 +1,9 @@
+var s: string;
+    c: char;
+begin
+    a := "Hello";
+    a += " There";
+    write a;
+    a := a + ", Jackson"
+    write a
+end
