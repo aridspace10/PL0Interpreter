@@ -14,6 +14,8 @@ data AssignedType = IntType
                     | BoolType 
                     | RefType String 
                     | SubType Int Int
+                    | StrType 
+                    | CharType
                     | ArrType AssignedType deriving (Show, Eq)
 data Scope = Scope SymTable [Error] Scope
 type SymTable = Map.Map String AssignedType
@@ -39,7 +41,7 @@ lookupType id = do
         Just IntType -> return IntType
         Just BoolType -> return BoolType
         Just (ArrType ty) -> return $ ArrType ty
-        nothing -> throwError (show symTable)
+        nothing -> throwError (show symTable ++ "for id: " ++ show id)
 
 
 getUnresolvedTypes :: [(String , AssignedType)] -> [(String , AssignedType)] -> [(String , AssignedType)]
@@ -249,6 +251,8 @@ checkTerm (SingleFactor fact) = checkFactor fact
 checkTerm (BinaryTerm fact op term) = return IntType
 
 checkFactor :: Factor -> StaticChecker AssignedType
+checkFactor (String _) = return StrType
+checkFactor (Char _) = return CharType
 checkFactor (FactorNumber _) = return IntType
 checkFactor (FactorLValue lval) = checkLValue lval
 checkFactor (FactorParen cond) = checkCondition cond
