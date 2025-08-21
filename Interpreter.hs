@@ -419,6 +419,12 @@ builtin_length [cond] = do
         _ -> throwError "Unexpected a value given to length() function" 
 builtin_length conds = throwError ("Expecting 1 argument, instead receieved" ++ (show $ length conds + 1))
 
+builtin_realloc :: [Condition] -> Interpreter Value
+builtin_realloc [] = throwError "Realloc expects 2 arguments, none were given"
+builtin_realloc [cond] = throwError "Expected 2 arguements, only one was given"
+builtin_realloc [arr, size] = undefined
+builtin_realloc conds = throwError "Expected 2 arguements, " ++ (show $ length conds) ++ " was given"
+
 builtin_malloc :: [Condition] -> Interpreter Value
 builtin_malloc [] = throwError "Expecting an argument"
 builtin_malloc [cond] = do
