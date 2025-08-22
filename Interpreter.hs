@@ -422,7 +422,16 @@ builtin_length conds = throwError ("Expecting 1 argument, instead receieved" ++ 
 builtin_realloc :: [Condition] -> Interpreter Value
 builtin_realloc [] = throwError "Realloc expects 2 arguments, none were given"
 builtin_realloc [cond] = throwError "Expected 2 arguements, only one was given"
-builtin_realloc [arr, size] = undefined
+builtin_realloc [arr, size] = do
+    esize <- evalCondition size
+    case arr of
+        Identifier id [] -> do
+            add <- getAddress id
+            g <- accessMemory add
+            case g of
+                (ArrayVal (IntVal initsize)) -> 
+                (ArrayVal Nothing) -> throwError "Cannot realloc something which hasn't been malloced"
+                _ -> throwError "Cannot realloc something which isn't an array"
 builtin_realloc conds = throwError "Expected 2 arguements, " ++ (show $ length conds) ++ " was given"
 
 builtin_malloc :: [Condition] -> Interpreter Value
