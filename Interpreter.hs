@@ -424,14 +424,19 @@ builtin_realloc [] = throwError "Realloc expects 2 arguments, none were given"
 builtin_realloc [cond] = throwError "Expected 2 arguements, only one was given"
 builtin_realloc [arr, size] = do
     esize <- evalCondition size
-    case arr of
-        Identifier id [] -> do
+    case (arr, esize) of
+        (Identifier id [], IntVal (Just newsize)) -> do
             add <- getAddress id
             g <- accessMemory add
             case g of
-                (ArrayVal (IntVal initsize)) -> 
+                (ArrayVal (IntVal initsize)) -> do
+                    env <- get
+                    let vEnv = varEnv env
+                    case initsize >= newsize of
+                        
                 (ArrayVal Nothing) -> throwError "Cannot realloc something which hasn't been malloced"
                 _ -> throwError "Cannot realloc something which isn't an array"
+        (_, val) -> throwError ("Malloc Size required a int value, not a " ++ show val)
 builtin_realloc conds = throwError "Expected 2 arguements, " ++ (show $ length conds) ++ " was given"
 
 builtin_malloc :: [Condition] -> Interpreter Value
