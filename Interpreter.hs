@@ -137,6 +137,12 @@ lookupProc name = do
     Nothing -> throwError $ "Undefined procedure: " ++ name
     Just p  -> return p
 
+fillMemory :: Address -> Value -> Int -> Int -> Interpreter ()
+fillMemory _ _ _ 0 = return ()
+fillMemory address val direction remaining = do
+    assignMemory address val
+    fillMemory (address + direction) val direction (remaining - 1)
+
 evalConstant :: Constant -> Interpreter Value
 evalConstant (ConstNumber (Number op val)) = do
     let eval = fromIntegral val
