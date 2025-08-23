@@ -457,8 +457,8 @@ builtin_malloc [cond] = do
         _ -> throwError ("Unable to malloc with " ++ show econd)
 builtin_malloc conds = throwError ("Expecting 1 argument, instead receieved" ++ (show $ length conds + 1))
 
-copyArrayContent :: Address -> Address -> Int -> Interpreter ()
-copyArrayContent _ _ 0 = return ()
+copyLinearContent :: Address -> Address -> Int -> Interpreter ()
+copyLinearContent _ _ 0 = return ()
 copyArrayContent from to remaining = do
     content <- accessMemory from
     assignMemory from NotUsed
