@@ -222,9 +222,9 @@ evalVarDec (VarDecl (Identifier id) ty) = do
     assignVar id e
 
 evalType :: Type -> Interpreter Value
-evalType (ArrayType ty size) = do
+evalType (ArrayType ty) = do
     g <- evalType ty
-    return (ArrayVal g size)
+    return (ArrayVal g 0)
 evalType (TypeIdentifer (Identifier ty)) = do
     if ty == "int"
     then return (IntVal Nothing)
@@ -418,7 +418,7 @@ builtin_length [cond] = do
             address <- getAddress id
             val <- accessMemory address
             case val of
-                (ArrayVal _ val) -> return val
+                (ArrayVal _ val) -> return (IntVal $ Just val)
                 _ -> throwError ("Type of " ++ id ++ " can not work with length()")
         _ -> throwError "Unexpected a value given to length() function" 
 builtin_length conds = throwError ("Expecting 1 argument, instead receieved" ++ (show $ length conds + 1))
@@ -429,19 +429,23 @@ builtin_realloc [cond] = throwError "Expected 2 arguements, only one was given"
 builtin_realloc [arr, size] = do
     esize <- evalCondition size
     case (arr, esize) of
-        (Identifier id [], IntVal (Just newsize)) -> do
+        (SimpleCondition (SimpleRelCondition (SingleExp "" (SingleFactor (FactorLValue (LValue (Identifier id) []))))), IntVal (Just newsize)) -> do
             add <- getAddress id
             g <- accessMemory add
             case g of
-                (ArrayVal _ initsize) -> do
+                (ArrayVal ty initsize) -> do
                     env <- get
                     let vEnv = varEnv env
                     case initsize >= newsize of
-                        True -> fillMemory add NotUsed (-1) (initsize - newsize)
+                        True -> do
+                            fillMemory add NotUsed (-1) (initsize - newsize)
+                            return NotUsed
                         False -> do
                             let next = nextFree vEnv
                             case add + initsize + 1 == next of
-                                True -> fillMemory (add + initsize + 1)
+                                True -> do 
+                                    fillMemory (add + initsize + 1) ty 1 (newsize - initsize)
+                                    return NotUsed
                                 False -> do
                                     assignMemory add NotUsed 
                                     assignAddress id next
@@ -451,7 +455,7 @@ builtin_realloc [arr, size] = do
                                     return (NotUsed)
                 _ -> throwError "Cannot realloc something which isn't an array"
         (_, val) -> throwError ("Malloc Size required a int value, not a " ++ show val)
-builtin_realloc conds = throwError "Expected 2 arguements, " ++ (show $ length conds) ++ " was given"
+builtin_realloc conds = throwError ("Expected 2 arguements, " ++ (show $ length conds) ++ " was given")
 
 builtin_malloc :: [Condition] -> Interpreter Value
 builtin_malloc [] = throwError "Expecting an argument"
@@ -468,7 +472,7 @@ copyLinearContent from to remaining = do
     content <- accessMemory from
     assignMemory from NotUsed
     assignMemory to content
-    copyArrayContent (from + 1) (to + 1) (remaining - 1)
+    copyLinearContent (from + 1) (to + 1) (remaining - 1)
 
 unassignParams :: Params -> Interpreter ()
 unassignParams [] = return ()
