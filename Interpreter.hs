@@ -13,7 +13,6 @@ import Control.Monad.Except
 import qualified Data.Map as Map
 import qualified Data.Vector as V
 import Grammer
-import Grammer (Identifier(Identifier), Constant (ConstArray))
 
 type Address       = Int
 type MemoryMapping = Map.Map String Address
@@ -443,6 +442,8 @@ builtin_realloc [arr, size] = do
                             let next = nextFree vEnv
                             case add + initsize + 1 == next of
                                 True -> fillMemory (add + initsize + 1)
+                                False -> do
+
                 _ -> throwError "Cannot realloc something which isn't an array"
         (_, val) -> throwError ("Malloc Size required a int value, not a " ++ show val)
 builtin_realloc conds = throwError "Expected 2 arguements, " ++ (show $ length conds) ++ " was given"
@@ -455,6 +456,14 @@ builtin_malloc [cond] = do
         IntVal (Just val) -> return (ReferenceVal "malloc" (IntVal (Just val)))
         _ -> throwError ("Unable to malloc with " ++ show econd)
 builtin_malloc conds = throwError ("Expecting 1 argument, instead receieved" ++ (show $ length conds + 1))
+
+copyArrayContent :: Address -> Address -> Int -> Interpreter ()
+copyArrayContent _ _ 0 = return ()
+copyArrayContent from to remaining = do
+    content <- accessMemory from
+    assignMemory from NotUsed
+    assignMemory to content
+    copyArrayContent (from + 1) (to + 1) (remaining - 1)
 
 unassignParams :: Params -> Interpreter ()
 unassignParams [] = return ()
