@@ -439,7 +439,11 @@ builtin_realloc [arr, size] = do
                     env <- get
                     let vEnv = varEnv env
                     case initsize >= newsize of
-                        
+                        True -> fillMemory add NotUsed (-1) (initsize - newsize)
+                        False -> do
+                            let next = nextFree vEnv
+                            case add + initsize + 1 == next of
+                                True -> fillMemory (add + initsize + 1)
                 (ArrayVal Nothing) -> throwError "Cannot realloc something which hasn't been malloced"
                 _ -> throwError "Cannot realloc something which isn't an array"
         (_, val) -> throwError ("Malloc Size required a int value, not a " ++ show val)
