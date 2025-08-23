@@ -341,7 +341,7 @@ evalStatement (Assignment lval (AssignOperator op) cond) = do
                                             let vEnv = varEnv env
                                             let address = nextFree vEnv
                                             assignAddress id address
-                                            assignMemory address (ArrayVal (IntVal Nothing) size)
+                                            assignMemory address (ArrayVal ty size)
                                             address <- assignArray ty size (address + 1)
                                             env' <- get
                                             let vEnv' = varEnv env'
@@ -443,7 +443,12 @@ builtin_realloc [arr, size] = do
                             case add + initsize + 1 == next of
                                 True -> fillMemory (add + initsize + 1)
                                 False -> do
-
+                                    assignMemory add NotUsed 
+                                    assignAddress id next
+                                    assignMemory next (ArrayVal ty newsize)
+                                    g <- copyLinearContent (add + 1) (next + 1) initsize
+                                    fillMemory g ty 1 (newsize - initsize)
+                                    return (NotUsed)
                 _ -> throwError "Cannot realloc something which isn't an array"
         (_, val) -> throwError ("Malloc Size required a int value, not a " ++ show val)
 builtin_realloc conds = throwError "Expected 2 arguements, " ++ (show $ length conds) ++ " was given"
@@ -457,9 +462,9 @@ builtin_malloc [cond] = do
         _ -> throwError ("Unable to malloc with " ++ show econd)
 builtin_malloc conds = throwError ("Expecting 1 argument, instead receieved" ++ (show $ length conds + 1))
 
-copyLinearContent :: Address -> Address -> Int -> Interpreter ()
-copyLinearContent _ _ 0 = return ()
-copyArrayContent from to remaining = do
+copyLinearContent :: Address -> Address -> Int -> Interpreter Int
+copyLinearContent _ to 0 = return to
+copyLinearContent from to remaining = do
     content <- accessMemory from
     assignMemory from NotUsed
     assignMemory to content
