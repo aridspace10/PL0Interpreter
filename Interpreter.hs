@@ -42,7 +42,7 @@ data Procedure = Procedure {
 data Value = IntVal (Maybe Int)
            | BoolVal (Maybe Bool)
            | ArrayContent [Value]
-           | ArrayVal Value
+           | ArrayVal Value Int
            | ReferenceVal String Value
            | Uninitialized
            | Undefined
@@ -54,7 +54,7 @@ builtinMap :: Map.Map String Builtin
 builtinMap = Map.fromList [ ("malloc", builtin_malloc), ("length", builtin_length), ("realloc", builtin_realloc)]
 
 sameConstructor :: Value -> Value -> Bool
-sameConstructor (ArrayContent _) (ArrayVal _) = True
+sameConstructor (ArrayContent _) (ArrayVal _ _) = True
 sameConstructor a b = toConstr a == toConstr b
 
 type Interpreter a = StateT Env (ExceptT String IO) a
@@ -108,7 +108,7 @@ lookupVar name = do
     address <- getAddress name
     val <- accessMemory address
     case val of
-        ArrayVal (IntVal (Just len)) -> getArrayContent (address + 1) len []
+        ArrayVal _ len -> getArrayContent (address + 1) len []
         _ -> return val
 
 assignVar :: String -> Value -> Interpreter ()
@@ -223,9 +223,9 @@ evalVarDec (VarDecl (Identifier id) ty) = do
     assignVar id e
 
 evalType :: Type -> Interpreter Value
-evalType (ArrayType ty) = do
+evalType (ArrayType ty size) = do
     g <- evalType ty
-    return (ArrayVal g)
+    return (ArrayVal g size)
 evalType (TypeIdentifer (Identifier ty)) = do
     if ty == "int"
     then return (IntVal Nothing)
@@ -252,7 +252,7 @@ print' (IntVal (Just v)) Empty = liftIO $ putStr (show v)
 print' (BoolVal (Just v)) Empty = liftIO $ putStr (show v)
 print' (IntVal (Just v)) _ = liftIO $ print v
 print' (BoolVal (Just v)) _ = liftIO $ print v
-print' (ArrayVal (IntVal (Just space))) (SingleExp "" (SingleFactor (FactorLValue (LValue (Identifier id) [])))) = do
+print' (ArrayVal ty space) (SingleExp "" (SingleFactor (FactorLValue (LValue (Identifier id) [])))) = do
     liftIO $ putStr "["
     address <- getAddress id
     printArray (address + 1) space
@@ -324,7 +324,7 @@ evalStatement (Assignment lval (AssignOperator op) cond) = do
                             case val of
                                 Undefined -> throwError (id ++ " is not defined")
                                 Uninitialized -> throwError (id ++ " is not initalized to a certain size")
-                                (ArrayVal (IntVal (Just size))) -> case (size < (length values)) of
+                                (ArrayVal _ size) -> case (size < (length values)) of
                                     (True) -> throwError (id ++ " is of set size " ++ show size ++ ", however given array is of size " ++ show (length values))
                                     (False) -> do
                                         address <- getAddress id
@@ -335,14 +335,14 @@ evalStatement (Assignment lval (AssignOperator op) cond) = do
                                 ("malloc", IntVal (Just size)) -> do
                                     t <- lookupVar id
                                     case t of
-                                        (ArrayVal ty) -> do
+                                        (ArrayVal ty _) -> do
                                             initaladd <- getAddress id
                                             assignMemory initaladd NotUsed
                                             env <- get
                                             let vEnv = varEnv env
                                             let address = nextFree vEnv
                                             assignAddress id address
-                                            assignMemory address (ArrayVal (IntVal (Just size)))
+                                            assignMemory address (ArrayVal (IntVal Nothing) size)
                                             address <- assignArray ty size (address + 1)
                                             env' <- get
                                             let vEnv' = varEnv env'
@@ -419,8 +419,7 @@ builtin_length [cond] = do
             address <- getAddress id
             val <- accessMemory address
             case val of
-                (ArrayVal (IntVal Nothing)) -> return (IntVal (Just 0))
-                (ArrayVal val) -> return val
+                (ArrayVal _ val) -> return val
                 _ -> throwError ("Type of " ++ id ++ " can not work with length()")
         _ -> throwError "Unexpected a value given to length() function" 
 builtin_length conds = throwError ("Expecting 1 argument, instead receieved" ++ (show $ length conds + 1))
@@ -435,7 +434,7 @@ builtin_realloc [arr, size] = do
             add <- getAddress id
             g <- accessMemory add
             case g of
-                (ArrayVal (IntVal initsize)) -> do
+                (ArrayVal _ initsize) -> do
                     env <- get
                     let vEnv = varEnv env
                     case initsize >= newsize of
@@ -444,7 +443,6 @@ builtin_realloc [arr, size] = do
                             let next = nextFree vEnv
                             case add + initsize + 1 == next of
                                 True -> fillMemory (add + initsize + 1)
-                (ArrayVal Nothing) -> throwError "Cannot realloc something which hasn't been malloced"
                 _ -> throwError "Cannot realloc something which isn't an array"
         (_, val) -> throwError ("Malloc Size required a int value, not a " ++ show val)
 builtin_realloc conds = throwError "Expected 2 arguements, " ++ (show $ length conds) ++ " was given"
@@ -474,12 +472,12 @@ assignParams (given: givens) ((id, ty): params) = do
     case (sameConstructor econd ty) of
         True -> do
             case (ty, econd) of
-                (ArrayVal _, ArrayContent values) -> do
+                (ArrayVal ty _, ArrayContent values) -> do
                     env <- get
                     let vEnv = varEnv env
                     let address = nextFree vEnv
                     assignAddress id address
-                    assignMemory address (ArrayVal $ IntVal $ Just (length values))
+                    assignMemory address (ArrayVal ty (length values))
                     next <- arrayBuild (address + 1) values
                     env' <- get
                     let vEnv' = varEnv env'
@@ -587,7 +585,7 @@ evalExp (SingleExp str term) = do
             _ -> throwError (show term)
         (BoolVal e) -> return (BoolVal e)
         (ArrayContent e) -> return (ArrayContent e)
-        (ArrayVal e) -> return (ArrayVal e)
+        (ArrayVal e s) -> return (ArrayVal e s)
         (ReferenceVal str val) -> return (ReferenceVal str val)
         _ -> throwError $ (show val ++ show env)
 evalExp (BinaryExp str term exp) = do
