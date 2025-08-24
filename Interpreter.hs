@@ -137,8 +137,8 @@ lookupProc name = do
     Nothing -> throwError $ "Undefined procedure: " ++ name
     Just p  -> return p
 
-fillMemory :: Address -> Value -> Int -> Int -> Interpreter ()
-fillMemory _ _ _ 0 = return ()
+fillMemory :: Address -> Value -> Int -> Int -> Interpreter Int
+fillMemory add _ _ 0 = return add
 fillMemory address val direction remaining = do
     assignMemory address val
     fillMemory (address + direction) val direction (remaining - 1)
