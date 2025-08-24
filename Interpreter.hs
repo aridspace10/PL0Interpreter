@@ -13,6 +13,7 @@ import Control.Monad.Except
 import qualified Data.Map as Map
 import qualified Data.Vector as V
 import Grammer
+import Parser (parseStatementList)
 
 type Address       = Int
 type MemoryMapping = Map.Map String Address
@@ -238,6 +239,7 @@ evalStatementList (ComplexStatement stmt stmtList) = do
     g <- evalStatement stmt
     case g of
         Left () -> evalStatementList stmtList
+        Right NotUsed -> evalStatementList stmtList
         Right val -> return (Right val)
 evalStatementList (SimpleStatement stmt) = do
     g <- evalStatement stmt
@@ -439,7 +441,8 @@ builtin_realloc [arr, size] = do
                     let vEnv = varEnv env
                     case initsize >= newsize of
                         True -> do
-                            fillMemory add NotUsed (-1) (initsize - newsize)
+                            assignMemory add (ArrayVal ty newsize)
+                            fillMemory (add + initsize) NotUsed (-1) (initsize - newsize)
                             return NotUsed
                         False -> do
                             let next = nextFree vEnv
