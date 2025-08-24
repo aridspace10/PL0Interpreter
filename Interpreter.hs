@@ -608,12 +608,12 @@ evalExp (SingleExp str term) = do
                 if str == "-"
                 then return (IntVal $ Just (-e))
                 else return (IntVal $ Just e)
-            _ -> throwError (show term)
+            _ -> throwError ("Error in evalTerm IntVal: " ++ show term)
         (BoolVal e) -> return (BoolVal e)
         (ArrayContent e) -> return (ArrayContent e)
         (ArrayVal e s) -> return (ArrayVal e s)
         (ReferenceVal str val) -> return (ReferenceVal str val)
-        _ -> throwError $ (show val ++ show env)
+        _ -> throwError $ ("Error in evalTerm: " ++ show val ++ "\n Env: " ++ show env)
 evalExp (BinaryExp str term exp) = do
     eval <- evalTerm term
     eexp <- evalExp exp
@@ -667,8 +667,16 @@ evalLValue (LValue id []) = evalIdentifier id
 evalLValue (LValue (Identifier id) (const: [])) = do
     c <- evalConstant const
     initalAdd <- getAddress id
-    case (c) of
-        (IntVal (Just val)) -> accessMemory (initalAdd + val + 1)
+    val <- lookupVar id
+    case (val) of
+        (ArrayVal _ size) -> do
+            case (c) of
+                (IntVal (Just val)) -> do
+                    case (size > c) of
+                        True -> accessMemory (initalAdd + val + 1)
+                        False -> throwError ("Unable to index into element " ++ c ++ " of size " ++ size)
+                _ -> throwError ("Unable to use index of type " ++ show c)
+        _ -> throwError ("Unable to index of type " ++ show val)
 
 emptyEnv :: Env
 emptyEnv = Env {
