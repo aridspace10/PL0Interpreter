@@ -350,7 +350,7 @@ parseCallStatement = do
 parseCallParamList :: Parser CallParamList
 parseCallParamList = do
     first <- parseCondition
-    rest <- many parseCondition
+    rest <- many parseConditons
     return (CallParamList (first : rest))
     <|> do
     return (CallParamList [])
