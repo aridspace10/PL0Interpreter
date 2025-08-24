@@ -452,7 +452,11 @@ builtin_realloc [arr, size] = do
                                     assignAddress id next
                                     assignMemory next (ArrayVal ty newsize)
                                     g <- copyLinearContent (add + 1) (next + 1) initsize
-                                    fillMemory g ty 1 (newsize - initsize)
+                                    address <- fillMemory g ty 1 (newsize - initsize)
+                                    env' <- get
+                                    let vEnv' = varEnv env'
+                                    let newVEnv = vEnv' {nextFree = address + 1 }
+                                    put env { varEnv = newVEnv }
                                     return (NotUsed)
                 _ -> throwError "Cannot realloc something which isn't an array"
         (_, val) -> throwError ("Malloc Size required a int value, not a " ++ show val)
