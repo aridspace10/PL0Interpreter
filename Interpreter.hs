@@ -107,6 +107,7 @@ lookupVar name = do
     address <- getAddress name
     val <- accessMemory address
     case val of
+        ArrayVal ty 0 -> return val
         ArrayVal _ len -> getArrayContent (address + 1) len []
         _ -> return val
 
@@ -348,7 +349,7 @@ evalStatement (Assignment lval (AssignOperator op) cond) = do
                                             let newVEnv = vEnv' {nextFree = address + 1 }
                                             put env { varEnv = newVEnv }
                                             return (Left ())
-                                        _ -> throwError "DO LATER"
+                                        _ -> throwError ("DO LATER " ++ show env)
                                 ("length", IntVal (Just size)) -> do
                                     assignVar id (IntVal (Just size))
                                     return (Left ())
