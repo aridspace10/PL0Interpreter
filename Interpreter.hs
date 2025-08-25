@@ -667,14 +667,14 @@ evalLValue (LValue id []) = evalIdentifier id
 evalLValue (LValue (Identifier id) (const: [])) = do
     c <- evalConstant const
     initalAdd <- getAddress id
-    val <- lookupVar id
+    val <- accessMemory initalAdd
     case (val) of
         (ArrayVal _ size) -> do
             case (c) of
                 (IntVal (Just val)) -> do
-                    case (size > c) of
+                    case (size > val) of
                         True -> accessMemory (initalAdd + val + 1)
-                        False -> throwError ("Unable to index into element " ++ c ++ " of size " ++ size)
+                        False -> throwError ("Unable to index into element " ++ show val ++ " of array size " ++ show size)
                 _ -> throwError ("Unable to use index of type " ++ show c)
         _ -> throwError ("Unable to index of type " ++ show val)
 
