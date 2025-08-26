@@ -178,25 +178,12 @@ checkStatementList (ComplexStatement stat statLst) = do
     checkStatement stat
     checkStatementList statLst
 
-checkAccessing :: AssignedType -> [Constant] -> StaticChecker AssignedType
-checkAccessing (ArrType (ArrType (innerty))) [] = throwError "Cannot assign Condition to array"
-checkAccessing (ArrType ty) [] = return (ArrType ty)
-checkAccessing ty [] = return ty
-checkAccessing (ArrType innerty) (c:cs) = checkAccessing innerty cs
-checkAccessing (ty) (c:cs) = throwError ("Int is not subscriptable")
-
 checkStatement :: Statement -> StaticChecker ()
 checkStatement (Assignment ty lval cond) = do
-    checkLValue lval
-    condType <- checkCondition cond
-    case (lval) of
-        (LValue (Identifier id) const) -> do
-            idType <- lookupType id
-            targetTy <- checkAccessing idType const
-            if condType == targetTy
-            then return ()
-            else throwError ("Cannot Assign " ++ (show condType) ++ " to " ++ (show targetTy))
-        _ -> throwError "IDK how"
+    targetTy <- checkLValue lval
+    if condType == targetTy
+    then return ()
+    else throwError ("Cannot Assign " ++ show condType ++ " to " ++ show targetTy)
 checkStatement (ArrayCreation lval ty const) = do
     let e = getConst const
     if (e < 0) then throwError "Negative Space Array can't exist"
