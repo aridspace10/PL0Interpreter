@@ -181,9 +181,10 @@ checkStatementList (ComplexStatement stat statLst) = do
 checkStatement :: Statement -> StaticChecker ()
 checkStatement (Assignment ty lval cond) = do
     targetTy <- checkLValue lval
+    condType <- checkCondition cond
     if condType == targetTy
     then return ()
-    else throwError ("Cannot Assign " ++ show condType ++ " to " ++ show targetTy)
+    else throwError ("Cannot Assign " ++ (show condType) ++ " to " ++ (show targetTy))
 checkStatement (ArrayCreation lval ty const) = do
     let e = getConst const
     if (e < 0) then throwError "Negative Space Array can't exist"
@@ -215,7 +216,8 @@ checkLValue (LValue (Identifier id) consts) =
         "True" -> return BoolType
         "False" -> return BoolType
         _ -> do
-            checkAccess (lookupType id) consts
+            ty <- lookupType id
+            checkAccess ty consts
     where
         checkAccess StrType [] = return StrType
         checkAccess StrType [const] = return CharType
