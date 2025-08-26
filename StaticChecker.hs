@@ -42,6 +42,8 @@ lookupType id = do
         Just IntType -> return IntType
         Just BoolType -> return BoolType
         Just (ArrType ty) -> return $ ArrType ty
+        Just StrType -> return StrType
+        Just CharType -> return CharType
         nothing -> throwError (show symTable ++ "for id: " ++ show id)
 
 
@@ -181,7 +183,7 @@ checkAccessing (ArrType (ArrType (innerty))) [] = throwError "Cannot assign Cond
 checkAccessing (ArrType ty) [] = return (ArrType ty)
 checkAccessing ty [] = return ty
 checkAccessing (ArrType innerty) (c:cs) = checkAccessing innerty cs
-checkAccessing (ty) (c:cs) = throwError "Int is not subscriptable"
+checkAccessing (ty) (c:cs) = throwError ("Int is not subscriptable")
 
 checkStatement :: Statement -> StaticChecker ()
 checkStatement (Assignment ty lval cond) = do
@@ -225,7 +227,16 @@ checkLValue (LValue (Identifier id) consts) =
     case id of
         "True" -> return BoolType
         "False" -> return BoolType
-        _ -> lookupType id
+        _ -> do
+            checkAccess (lookupType id) consts
+    where
+        checkAccess StrType [] = return StrType
+        checkAccess StrType [const] = return CharType
+        checkAccess CharType [] = return CharType
+        checkAccess (ArrType ty) [] = return (ArrType ty)
+        checkAccess (ArrType ty) (const:consts) = checkAccess ty consts 
+        checkAccess ty [] = return ty
+        checkAccess ty consts = throwError ("Cannot Index into " ++ show ty)
 
 checkCondition :: Condition -> StaticChecker AssignedType
 checkCondition (NotCondition cond) = checkCondition cond
