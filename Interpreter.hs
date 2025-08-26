@@ -9,6 +9,7 @@ import Control.Monad.Except
 import qualified Data.Map as Map
 import qualified Data.Vector as V
 import Grammer
+import Grammer (Factor(CharLiteral))
 
 type Address       = Int
 type MemoryMapping = Map.Map String Address
@@ -38,6 +39,7 @@ data Value = IntVal (Maybe Int)
             | ArrayVal Value
             | StringVal (Maybe Int)
             | CharVal (Maybe Char)
+            | TempString [Char]
             | Uninitialized
             | Undefined  
             | NotUsed
@@ -398,6 +400,9 @@ evalExp (SingleExp str term) = do
         (BoolVal e) -> return (BoolVal e)
         (ArrayContent e) -> return (ArrayContent e)
         (ArrayVal e) -> return (ArrayVal e)
+        (CharVal e) -> return (CharVal e)
+        (TempString e) -> return (TempString e)
+        (StringVal e) -> return (StringVal e)
 evalExp (BinaryExp str term exp) = do
     eval <- evalTerm term
     eexp <- evalExp exp
@@ -428,6 +433,8 @@ evalFactor :: Factor -> Interpreter Value
 evalFactor (FactorLValue lval) = evalLValue lval
 evalFactor (FactorNumber num) = return (IntVal $ Just $ fromIntegral num)
 evalFactor (FactorParen cond) = evalCondition cond
+evalFactor (String chars) = return (TempString chars)
+evalFactor (CharLiteral char) = return (CharVal (Just char))
 evalFactor (ArrayLiteral exps) = do
     values <- mapM evalExp exps  -- [Exp] -> Interpreter [Value]
     return $ ArrayContent values
