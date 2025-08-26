@@ -1,0 +1,13 @@
+var n: int;
+    f: int;
+    t: int;
+procedure fact(n: int) -> int =
+  begin
+    if n = 0 then
+        return 1
+    else 
+        return n * call fact(n-1)
+  end;
+begin
+    write call fact(5)
+end

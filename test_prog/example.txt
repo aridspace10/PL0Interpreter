@@ -1,7 +1,11 @@
-var a: array(int);
-    b: array(int);
-var x: bool;
-    y: bool;
+var i: int;
+procedure double(n: array(int)) =
+  begin
+    for (i := 0; i < 4; i++) do
+        n[i] := n[i] * 2
+    a := n
+  end;
 begin
-    a := new array(5)
+    call double([1,2,3,4]);
+    write a
 end

@@ -1,8 +1,7 @@
 var a: array(int);
 begin
-    a := new array(5);
+    a := call malloc(5);
     a[0] := 1;
-    write a[0];
-    a := [1,2,3,4];
-    write a
+    write a;
+    write call length(a)
 end

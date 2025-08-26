@@ -1,0 +1,10 @@
+const
+  nums = [1,2,3,4];
+var
+  sum: int; 
+begin  
+  sum := 0;
+  for num in nums do 
+    sum += num;
+  write sum
+end

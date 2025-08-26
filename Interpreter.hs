@@ -1,7 +1,11 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use when" #-}
 {-# HLINT ignore "Redundant bracket" #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# HLINT ignore "Use if" #-}
+{-# HLINT ignore "Use camelCase" #-}
 module Interpreter where
+import Data.Data
 import Parser
 import FileIO
 import Control.Monad.State
@@ -9,12 +13,12 @@ import Control.Monad.Except
 import qualified Data.Map as Map
 import qualified Data.Vector as V
 import Grammer
-import Grammer (Factor(CharLiteral))
 
 type Address       = Int
 type MemoryMapping = Map.Map String Address
 type Memory        = V.Vector Value
 type ProcEnv       = Map.Map String Procedure
+type Params        = [(String, Value)] -- Maps id to type
 
 data VarEnv = VarEnv {
     mapping :: MemoryMapping,
@@ -29,7 +33,8 @@ data Env = Env {
 
 data Procedure = Procedure {
   procName   :: String,
-  parameters :: [String],
+  parameters :: Params,
+  ty       :: Type,
   body       :: Block
 } deriving (Show)
 
@@ -40,10 +45,19 @@ data Value = IntVal (Maybe Int)
             | StringVal (Maybe Int)
             | CharVal (Maybe Char)
             | TempString [Char]
+            | ReferenceVal String Value
             | Uninitialized
             | Undefined  
             | NotUsed
             deriving (Show, Eq)
+
+type Builtin = [Condition] -> Interpreter Value
+builtinMap :: Map.Map String Builtin
+builtinMap = Map.fromList [ ("malloc", builtin_malloc), ("length", builtin_length), ("realloc", builtin_realloc)]
+
+sameConstructor :: Value -> Value -> Bool
+sameConstructor (ArrayContent _) (ArrayVal _ _) = True
+sameConstructor a b = toConstr a == toConstr b
 
 type Interpreter a = StateT Env (ExceptT String IO) a
 
@@ -53,14 +67,21 @@ getAddress name = do
     let vEnv = varEnv env
     case Map.lookup name (mapping vEnv) of
         Just address -> return address
+        _ -> throwError (show $ mapping vEnv)
 
 assignAddress :: String -> Address -> Interpreter ()
 assignAddress id address = do
     env <- get
     let vEnv = varEnv env
-    let newMapping = Map.insert id address (mapping vEnv)
-    let newVEnv = vEnv { mapping = newMapping}
-    put env { varEnv = newVEnv }
+    case address of
+        (-1) -> do
+            let newMapping = Map.delete id (mapping vEnv)
+            let newVEnv = vEnv { mapping = newMapping}
+            put env { varEnv = newVEnv }
+        _ -> do
+            let newMapping = Map.insert id address (mapping vEnv)
+            let newVEnv = vEnv { mapping = newMapping}
+            put env { varEnv = newVEnv }
 
 accessMemory :: Int -> Interpreter Value
 accessMemory address = do
@@ -78,10 +99,20 @@ assignMemory address val = do
     let newVEnv = vEnv { memory = newMemory }
     put env { varEnv = newVEnv }
 
+getArrayContent :: Int -> Int -> [Value] -> Interpreter Value
+getArrayContent _ 0 vals = return (ArrayContent vals)
+getArrayContent address left vals = do
+    val <- accessMemory address
+    getArrayContent (address + 1) (left - 1) (vals ++ [val])
+
 lookupVar :: String -> Interpreter Value
 lookupVar name = do
     address <- getAddress name
-    accessMemory address
+    val <- accessMemory address
+    case val of
+        ArrayVal ty 0 -> return val
+        ArrayVal _ len -> getArrayContent (address + 1) len []
+        _ -> return val
 
 assignVar :: String -> Value -> Interpreter ()
 assignVar name val = do
@@ -109,17 +140,25 @@ lookupProc name = do
     Nothing -> throwError $ "Undefined procedure: " ++ name
     Just p  -> return p
 
+fillMemory :: Address -> Value -> Int -> Int -> Interpreter Int
+fillMemory add _ _ 0 = return add
+fillMemory address val direction remaining = do
+    assignMemory address val
+    fillMemory (address + direction) val direction (remaining - 1)
+
 evalConstant :: Constant -> Interpreter Value
 evalConstant (ConstNumber (Number op val)) = do
     let eval = fromIntegral val
     if op == "-" then return (IntVal $ Just (-eval)) else return (IntVal $ Just eval)
 evalConstant (ConstIdentifier id) = evalIdentifier id
+evalConstant (ConstArray fact) = evalFactor fact
 
 evalProgram :: Program -> Interpreter ()
 evalProgram (Program blk) = do
     evalBlock blk
+    return ()
 
-evalBlock :: Block -> Interpreter ()
+evalBlock :: Block -> Interpreter (Either () Value)
 evalBlock (Block decs cmpStmt) = do
     evalDeclarationList decs 
     evalStatement cmpStmt
@@ -139,12 +178,21 @@ evalDeclaration (DecProcedureDef pd) = evalProcedureDef pd
 evalProcedureDef :: ProcedureDef -> Interpreter ()
 evalProcedureDef (ProcedureDef ph blk) = do
     env <- get
-    name <- evalProcedureHead ph
-    let newProcEnv = Map.insert name (Procedure name [] blk) (procEnv env)
+    (name, params, ty) <- evalProcedureHead ph
+    let newProcEnv = Map.insert name (Procedure name params ty blk) (procEnv env)
     put env { procEnv = newProcEnv }
 
-evalProcedureHead :: ProcedureHead -> Interpreter [Char]
-evalProcedureHead (ProcedureHead (Identifier id)) = return id
+evalProcedureHead :: ProcedureHead -> Interpreter ([Char], Params, Type)
+evalProcedureHead (ProcedureHead (Identifier id) lst ty) = do
+    params <- evalParametersList lst []
+    return (id, params, ty)
+
+evalParametersList :: ParametersList -> Params -> Interpreter Params
+evalParametersList (ParametersList []) lst = return lst
+evalParametersList (ParametersList (Parameter (Identifier id) ty : params)) lst = do
+    ety <- evalType ty
+    let param = (id, ety)
+    evalParametersList (ParametersList params) (param : lst)
 
 evalTypeDefList :: TypeDefList -> Interpreter ()
 evalTypeDefList (TypeDefList []) = return ()
@@ -180,7 +228,7 @@ evalVarDec (VarDecl (Identifier id) ty) = do
 evalType :: Type -> Interpreter Value
 evalType (ArrayType ty) = do
     g <- evalType ty
-    return (ArrayVal g)
+    return (ArrayVal g 0)
 evalType (TypeIdentifer (Identifier ty)) = do
     if ty == "int"
     then return (IntVal Nothing)
@@ -192,11 +240,18 @@ evalType (TypeIdentifer (Identifier ty)) = do
     then return (CharVal Nothing)
     else throwError ("Unknown Type")
 
-evalStatementList :: StatementList -> Interpreter ()
+evalStatementList :: StatementList -> Interpreter (Either () Value)
 evalStatementList (ComplexStatement stmt stmtList) = do
-    evalStatement stmt
-    evalStatementList stmtList
-evalStatementList (SimpleStatement stmt) = evalStatement stmt
+    g <- evalStatement stmt
+    case g of
+        Left () -> evalStatementList stmtList
+        Right NotUsed -> evalStatementList stmtList
+        Right val -> return (Right val)
+evalStatementList (SimpleStatement stmt) = do
+    g <- evalStatement stmt
+    case g of
+        Left () -> return (Left ())
+        Right val -> return (Right val)
 
 print' :: Value -> Exp -> Interpreter ()
 print' (IntVal Nothing) _ = liftIO $ putStr ("null")
@@ -205,11 +260,11 @@ print' (IntVal (Just v)) Empty = liftIO $ putStr (show v)
 print' (BoolVal (Just v)) Empty = liftIO $ putStr (show v)
 print' (IntVal (Just v)) _ = liftIO $ print v
 print' (BoolVal (Just v)) _ = liftIO $ print v
-print' (ArrayVal (IntVal (Just space))) (SingleExp "" (SingleFactor (FactorLValue (LValue (Identifier id) [])))) = do
+print' (ArrayVal ty space) (SingleExp "" (SingleFactor (FactorLValue (LValue (Identifier id) [])))) = do
     liftIO $ putStr "["
     address <- getAddress id
-    printArray (address + 1) space 
-    where 
+    printArray (address + 1) space
+    where
         printArray _ 0 = liftIO $ putStr "]"
         printArray address 1 = do
             temp <- accessMemory address
@@ -221,101 +276,252 @@ print' (ArrayVal (IntVal (Just space))) (SingleExp "" (SingleFactor (FactorLValu
             print' temp Empty
             liftIO $ putStr ","
             printArray (address + 1) (space - 1)
-print' v _ = throwError (show v)
+print' (ArrayContent vals) _ = do
+    liftIO $ putStr "["
+    printArray vals
+    liftIO $ putStr "]\n"
+print' v _ = throwError ("Error in print: " ++ show v)
 
-evalStatement :: Statement -> Interpreter ()
+printArray :: [Value] -> Interpreter ()
+printArray [] = return ()
+printArray (val:[]) = do
+    print' val Empty
+    return ()
+printArray (val:vals) = do
+    print' val Empty
+    liftIO $ putStr ", "
+    printArray vals
+
+evalStatement :: Statement -> Interpreter (Either () Value)
 evalStatement (WriteStatement exp) = do
     val <- evalExp exp
     print' val exp
-
+    return (Left ())
+evalStatement (ReturnStatement cond) = do
+    econd <- evalCondition cond
+    return $ Right econd
 evalStatement (IfStatement cond stat1 stat2) = do
     val <- evalCondition cond
     case (val) of
         (BoolVal r) -> do
             case (r) of
                 (Just v) -> if v then evalStatement stat1 else evalStatement stat2
-                _ -> return ()
+                _ -> return (Left ())
         _ -> throwError ("Big Boy Problem")
 evalStatement (WhileStatement cond stat) = do
     val <- evalCondition cond
     case (val) of
         (BoolVal r) -> do
-            case (r) of 
+            case (r) of
                 (Just v) -> do
-                    if v then (do 
+                    if v then (do
                             evalStatement stat
                             evalStatement (WhileStatement cond stat))
-                    else return ()
-                _ -> return ()
+                    else return (Left ())
+                _ -> return (Left ())
         _ -> throwError ("Big Boy Problem")
-evalStatement (Assignment ty lval cond) = do
+evalStatement (Assignment lval (AssignOperator op) cond) = do
     econd <- evalCondition cond
     case lval of
         (LValue (Identifier id) []) -> do
-            case ty of
-                "" -> do
+            case op of
+                ":=" -> do
                     case econd of
                         (ArrayContent values) -> do
                             val <- lookupVar id
                             case val of
                                 Undefined -> throwError (id ++ " is not defined")
                                 Uninitialized -> throwError (id ++ " is not initalized to a certain size")
-                                (ArrayVal (IntVal (Just size))) -> case (size < (length values)) of
+                                (ArrayVal _ size) -> case (size < (length values)) of
                                     (True) -> throwError (id ++ " is of set size " ++ show size ++ ", however given array is of size " ++ show (length values))
                                     (False) -> do
                                         address <- getAddress id
                                         arrayBuild (address + 1) values
-                        _ -> assignVar id econd
+                                        return (Left ())
+                        (ReferenceVal str val) -> do
+                            case (str, val) of
+                                ("malloc", IntVal (Just size)) -> do
+                                    t <- lookupVar id
+                                    case t of
+                                        (ArrayVal ty _) -> do
+                                            initaladd <- getAddress id
+                                            assignMemory initaladd NotUsed
+                                            env <- get
+                                            let vEnv = varEnv env
+                                            let address = nextFree vEnv
+                                            assignAddress id address
+                                            assignMemory address (ArrayVal ty size)
+                                            address <- assignArray ty size (address + 1)
+                                            env' <- get
+                                            let vEnv' = varEnv env'
+                                            let newVEnv = vEnv' {nextFree = address + 1 }
+                                            put env { varEnv = newVEnv }
+                                            return (Left ())
+                                        _ -> throwError ("DO LATER ")
+                                ("length", IntVal (Just size)) -> do
+                                    assignVar id (IntVal (Just size))
+                                    return (Left ())
+                        _ -> do
+                            assignVar id econd
+                            return (Left ())
                 _ -> do
                     val <- lookupVar id
                     case (val, econd) of
                         (IntVal (Just lval), IntVal (Just rval)) -> do
-                            case ty of
-                                "-" -> assignVar id (IntVal $ Just (lval - rval))
-                                "+" -> assignVar id (IntVal $ Just (lval + rval))
+                            case op of
+                                "-=" -> assignVar id (IntVal $ Just (lval - rval))
+                                "+=" -> assignVar id (IntVal $ Just (lval + rval))
+                            return (Left ())
+                        (BoolVal _, _) -> throwError "Can't add anything to a boolean variable"
+                        (_, BoolVal _) -> throwError "Can't add to variable a boolean value"
+            return (Left ())
         (LValue (Identifier id) (const:[])) -> do
             a <- getAddress id
             (IntVal (Just c)) <- evalConstant const
             let address = a + c + 1
-            case ty of
-                "" -> assignMemory address econd
+            case op of
+                ":=" -> assignMemory address econd
                 _ -> do
                     val <- accessMemory address
                     case (val, econd) of
                         (IntVal (Just lval), IntVal (Just rval)) -> do
-                            case ty of
-                                "-" -> assignMemory address (IntVal $ Just (lval - rval))
-                                "+" -> assignMemory address (IntVal $ Just (lval + rval))
-evalStatement (CallStatement (Identifier id)) = do
-    pro <- lookupProc id
-    evalBlock (body pro)
-evalStatement (CompoundStatement stmtList) = do
-    evalStatementList stmtList
-evalStatement (ForStatement (ForHeader assign cond expr) stmt) = do
+                            case op of
+                                "-=" -> assignMemory address (IntVal $ Just (lval - rval))
+                                "+=" -> assignMemory address (IntVal $ Just (lval + rval))
+            return (Left ())
+evalStatement (CallStatement (Identifier id) (CallParamList params)) = do
+    case Map.lookup id builtinMap of
+        Just func -> do
+            val <- func params
+            return (Right val)
+        Nothing -> do
+            pro <- lookupProc id
+            assignParams params (parameters pro)
+            env <- get
+            let vEnv = varEnv env
+            g <- evalBlock (body pro)
+            put env {varEnv = vEnv}
+            return g
+evalStatement (CompoundStatement stmtList) = do evalStatementList stmtList
+evalStatement (ForStatement (ForRegular assign cond expr) stmt) = do
     evalStatement assign
     case assign of
-        (Assignment _ (LValue (Identifier id) _) _) -> evalForLoop id cond expr stmt
+        (Assignment (LValue (Identifier id) _) (AssignOperator ":=") _) -> do
+            evalForLoop id cond expr stmt
+            return (Left ())
         _ -> throwError "Assingment wasn't used"
-evalStatement (ArrayCreation (LValue (Identifier id) cs) _ const) = do
-    val <- lookupVar id
-    add <- getAddress id
-    assignMemory add NotUsed
-    space <- evalConstant const
-    env <- get
-    let vEnv = varEnv env
-    let address = nextFree vEnv
-    case (val, space) of
-        (ArrayVal ty, IntVal (Just space')) -> do 
-            assignAddress id address
-            assignMemory address (ArrayVal (IntVal (Just space')))
-            address <- assignArray ty space' (address + 1)
-            env' <- get
-            let vEnv' = varEnv env'
-            let newVEnv = vEnv' {nextFree = address + 1 }
-            put env { varEnv = newVEnv }
-evalStatement stuff = throwError (show stuff)
+evalStatement (ForStatement (ForEach (Identifier id) arr) stmt) = do
+    earr <- evalLValue arr
+    case earr of
+        (ArrayContent vals) -> do 
+            evalForEachLoop id vals stmt
+            return (Left ())
+        _ -> throwError ("Cannot Iterate over type" ++ show earr)
+evalStatement stuff = throwError ("Compiler Error in EvalStatement: " ++ show stuff)
 
-arrayBuild _ [] = return ()
+builtin_length :: [Condition] -> Interpreter Value
+builtin_length [] = throwError "Expecting an argument"
+builtin_length [cond] = do
+    case cond of
+        SimpleCondition (SimpleRelCondition (SingleExp "" (SingleFactor (FactorLValue (LValue (Identifier id) []))))) -> do
+            address <- getAddress id
+            val <- accessMemory address
+            case val of
+                (ArrayVal _ val) -> return (IntVal $ Just val)
+                _ -> throwError ("Type of " ++ id ++ " can not work with length()")
+        _ -> throwError "Unexpected a value given to length() function" 
+builtin_length conds = throwError ("Expecting 1 argument, instead receieved" ++ (show $ length conds + 1))
+
+builtin_realloc :: [Condition] -> Interpreter Value
+builtin_realloc [] = throwError "Realloc expects 2 arguments, none were given"
+builtin_realloc [cond] = throwError "Expected 2 arguements, only one was given"
+builtin_realloc [arr, size] = do
+    esize <- evalCondition size
+    case (arr, esize) of
+        (SimpleCondition (SimpleRelCondition (SingleExp "" (SingleFactor (FactorLValue (LValue (Identifier id) []))))), IntVal (Just newsize)) -> do
+            add <- getAddress id
+            g <- accessMemory add
+            case g of
+                (ArrayVal ty initsize) -> do
+                    env <- get
+                    let vEnv = varEnv env
+                    case initsize >= newsize of
+                        True -> do
+                            assignMemory add (ArrayVal ty newsize)
+                            fillMemory (add + initsize) NotUsed (-1) (initsize - newsize)
+                            return NotUsed
+                        False -> do
+                            let next = nextFree vEnv
+                            case add + initsize + 1 == next of
+                                True -> do 
+                                    fillMemory (add + initsize + 1) ty 1 (newsize - initsize)
+                                    return NotUsed
+                                False -> do
+                                    assignMemory add NotUsed 
+                                    assignAddress id next
+                                    assignMemory next (ArrayVal ty newsize)
+                                    g <- copyLinearContent (add + 1) (next + 1) initsize
+                                    address <- fillMemory g ty 1 (newsize - initsize)
+                                    env' <- get
+                                    let vEnv' = varEnv env'
+                                    let newVEnv = vEnv' {nextFree = address + 1 }
+                                    put env { varEnv = newVEnv }
+                                    return (NotUsed)
+                _ -> throwError "Cannot realloc something which isn't an array"
+        (_, val) -> throwError ("Malloc Size required a int value, not a " ++ show val)
+builtin_realloc conds = throwError ("Expected 2 arguements, " ++ (show $ length conds) ++ " was given")
+
+builtin_malloc :: [Condition] -> Interpreter Value
+builtin_malloc [] = throwError "Expecting an argument"
+builtin_malloc [cond] = do
+    econd <- evalCondition cond
+    case econd of
+        IntVal (Just val) -> return (ReferenceVal "malloc" (IntVal (Just val)))
+        _ -> throwError ("Unable to malloc with " ++ show econd)
+builtin_malloc conds = throwError ("Expecting 1 argument, instead receieved" ++ (show $ length conds + 1))
+
+copyLinearContent :: Address -> Address -> Int -> Interpreter Int
+copyLinearContent _ to 0 = return to
+copyLinearContent from to remaining = do
+    content <- accessMemory from
+    assignMemory from NotUsed
+    assignMemory to content
+    copyLinearContent (from + 1) (to + 1) (remaining - 1)
+
+unassignParams :: Params -> Interpreter ()
+unassignParams [] = return ()
+unassignParams ((id, _):params) = do
+    assignVar id NotUsed
+    assignAddress id (-1)
+    unassignParams params
+
+assignParams :: [Condition] -> Params -> Interpreter ()
+assignParams [] [] = return ()
+assignParams lst [] = throwError "Too Many Arguments"
+assignParams [] lst = throwError "Too few arguments"
+assignParams (given: givens) ((id, ty): params) = do
+    econd <- evalCondition given
+    case (sameConstructor econd ty) of
+        True -> do
+            case (ty, econd) of
+                (ArrayVal ty _, ArrayContent values) -> do
+                    env <- get
+                    let vEnv = varEnv env
+                    let address = nextFree vEnv
+                    assignAddress id address
+                    assignMemory address (ArrayVal ty (length values))
+                    next <- arrayBuild (address + 1) values
+                    env' <- get
+                    let vEnv' = varEnv env'
+                    let newVEnv = vEnv' {nextFree = next }
+                    put env { varEnv = newVEnv }
+                _ -> do
+                    assignVar id econd
+                    assignParams givens params
+        False -> throwError ("Wrong Parameter Types: " ++ show econd ++ " != " ++ show ty)
+
+arrayBuild :: Int -> [Value] -> Interpreter Int
+arrayBuild add [] = return add
 arrayBuild address (elem:elems) = do
     assignMemory address elem
     arrayBuild (address + 1) elems
@@ -342,10 +548,21 @@ evalForLoop id cond exp stmt = do
                 _ -> throwError ("Unknown Error")
         _ -> throwError "Condition should evaluate to a bool Value"
 
+evalForEachLoop :: String -> [Value] -> Statement -> Interpreter ()
+evalForEachLoop id [] _ = do
+    add <- getAddress id
+    assignMemory add NotUsed
+    assignAddress id (-1)
+    return ()
+evalForEachLoop id (val:vals) stmt = do
+    assignVar id val
+    evalStatement stmt
+    evalForEachLoop id vals stmt
+
 evalCondition :: Condition -> Interpreter Value
 evalCondition (NotCondition cond) = do
-    econd <- evalCondition cond 
-    case econd of 
+    econd <- evalCondition cond
+    case econd of
         (BoolVal (Just True)) -> return (BoolVal (Just False))
         (BoolVal (Just False)) -> return (BoolVal (Just True))
         (IntVal (Just 0)) -> return (IntVal (Just 1))
@@ -353,7 +570,7 @@ evalCondition (NotCondition cond) = do
 evalCondition (SimpleCondition cond) = evalRelationalCondition cond
 evalCondition (LogicCondition lcond (LogOp op) rcond) = do
     elcond <- evalRelationalCondition lcond
-    ercond <- evalCondition rcond 
+    ercond <- evalCondition rcond
     case (elcond, ercond) of
         (BoolVal (Just l), BoolVal (Just r)) -> case op of
             "&&" -> case (l, r) of
@@ -373,36 +590,39 @@ evalRelationalCondition (ComplexRelCondition lexp (RelOp op) rexp) = do
   elexp <- evalExp lexp
   erexp <- evalExp rexp
   case (elexp, erexp) of
-    (IntVal ml, IntVal mr) -> case (ml, mr) of       
-        (Just l, Just r) -> case op of
-            ">"  -> return $ BoolVal $ Just (l > r)
-            ">=" -> return $ BoolVal $ Just (l >= r)
-            "<"  -> return $ BoolVal $ Just (l < r)
-            "<=" -> return $ BoolVal $ Just (l <= r)
-            "!=" -> return $ BoolVal $ Just (l /= r)
-            "=" -> return $ BoolVal $ Just (l == r)
-            _    -> throwError ("Unknown relational operator: " ++ op)
+    (IntVal (Just l), IntVal (Just r)) -> case op of       
+        ">"  -> return $ BoolVal $ Just (l > r)
+        ">=" -> return $ BoolVal $ Just (l >= r)
+        "<"  -> return $ BoolVal $ Just (l < r)
+        "<=" -> return $ BoolVal $ Just (l <= r)
+        "!=" -> return $ BoolVal $ Just (l /= r)
+        "=" -> return $ BoolVal $ Just (l == r)
+        _    -> throwError ("Unknown relational operator: " ++ op)
     (BoolVal l, BoolVal r) -> case op of
-      "==" -> return $ BoolVal $ Just (l == r)
-      "!=" -> return $ BoolVal $ Just (l /= r)
-      _    -> throwError ("Unsupported operator for boolean values: " ++ op)
+        "==" -> return $ BoolVal $ Just (l == r)
+        "!=" -> return $ BoolVal $ Just (l /= r)
+        _    -> throwError ("Unsupported operator for boolean values: " ++ op)
     _ -> throwError "Type error in relational condition"
 
 evalExp :: Exp -> Interpreter Value
 evalExp (SingleExp str term) = do
     val <- evalTerm term
+    env <- get
     case (val) of
         (IntVal me) -> case (me) of
             (Just e) -> do
-                if str == "-" 
+                if str == "-"
                 then return (IntVal $ Just (-e))
                 else return (IntVal $ Just e)
+            _ -> throwError ("Error in evalTerm IntVal: " ++ show term)
         (BoolVal e) -> return (BoolVal e)
         (ArrayContent e) -> return (ArrayContent e)
-        (ArrayVal e) -> return (ArrayVal e)
+        (ArrayVal e s) -> return (ArrayVal e s)
+        (ReferenceVal str val) -> return (ReferenceVal str val)
         (CharVal e) -> return (CharVal e)
         (TempString e) -> return (TempString e)
         (StringVal e) -> return (StringVal e)
+        _ -> throwError $ ("Error in evalTerm: " ++ show val ++ "\n Env: " ++ show env)
 evalExp (BinaryExp str term exp) = do
     eval <- evalTerm term
     eexp <- evalExp exp
@@ -417,12 +637,14 @@ evalExp (BinaryExp str term exp) = do
 evalTerm :: Term -> Interpreter Value
 evalTerm (SingleFactor fact) = evalFactor fact
 evalTerm (BinaryTerm fact op term) = do
-    fact' <- evalFactor fact 
+    env <- get
+    fact' <- evalFactor fact
     term' <- evalTerm term
     case (op) of
         "*" -> do
             case (fact', term') of
                 (IntVal (Just left), IntVal (Just right)) -> return $ IntVal $ Just (left * right)
+                _ -> throwError (show fact' ++ " " ++ show term' ++ show env)
         "/" -> do
             case (fact', term') of
                 (IntVal (Just left), IntVal (Just right)) -> return $ IntVal $ Just (div left right)
@@ -433,6 +655,11 @@ evalFactor :: Factor -> Interpreter Value
 evalFactor (FactorLValue lval) = evalLValue lval
 evalFactor (FactorNumber num) = return (IntVal $ Just $ fromIntegral num)
 evalFactor (FactorParen cond) = evalCondition cond
+evalFactor (FactorCall call) = do
+    g <- evalStatement call
+    case g of
+        Left _ -> throwError "Compiler Error in evalFactor"
+        Right val -> return val
 evalFactor (String chars) = return (TempString chars)
 evalFactor (CharLiteral char) = return (CharVal (Just char))
 evalFactor (ArrayLiteral exps) = do
@@ -443,7 +670,7 @@ evalIdentifier :: Identifier -> Interpreter Value
 evalIdentifier (Identifier name) = do
     case name of
         "True" -> return (BoolVal (Just True))
-        "False" -> return (BoolVal (Just False)) 
+        "False" -> return (BoolVal (Just False))
         _ -> lookupVar name
 
 evalLValue :: LValue -> Interpreter Value
@@ -451,8 +678,16 @@ evalLValue (LValue id []) = evalIdentifier id
 evalLValue (LValue (Identifier id) (const: [])) = do
     c <- evalConstant const
     initalAdd <- getAddress id
-    case (c) of
-        (IntVal (Just val)) -> accessMemory (initalAdd + val + 1)
+    val <- accessMemory initalAdd
+    case (val) of
+        (ArrayVal _ size) -> do
+            case (c) of
+                (IntVal (Just val)) -> do
+                    case (size > val) of
+                        True -> accessMemory (initalAdd + val + 1)
+                        False -> throwError ("Unable to index into element " ++ show val ++ " of array size " ++ show size)
+                _ -> throwError ("Unable to use index of type " ++ show c)
+        _ -> throwError ("Unable to index of type " ++ show val)
 
 emptyEnv :: Env
 emptyEnv = Env {

@@ -1,0 +1,10 @@
+var a: array(int);
+begin
+    a := call malloc(5);
+    a[4] := 1;
+    call realloc(a, 7);
+    write a[4];
+    a[6] := 2;
+    call realloc(a, 2);
+    write a
+end

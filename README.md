@@ -30,26 +30,33 @@ VarDecl → IDENTIFIER COLON TypeIdentifier SEMICOLON
 
 ProcedureDef → ProcedureHead EQUALS Block SEMICOLON
 
-ProcedureHead → KW PROCEDURE IDENTIFIER LPAREN RPAREN
+ProcedureHead → KW PROCEDURE IDENTIFIER LPAREN ParametersList RPAREN ARROW Type
 
+ParametersList → [Parameter] { SEMICOLON Parameter}
+
+Parameter → IDENTIFIER COLON Type
+ 
 CompoundStatement → KW BEGIN StatementList KW END
 
 StatementList → Statement {SEMICOLON Statement}
 
 Statement → Assignment | CallStatement | ReadStatement | WriteStatement|
-WhileStatement | IfStatement | ForStatement | CompoundStatement
+WhileStatement | IfStatement | ForStatement | ReturnStatement | CompoundStatement
 
-ForStatement → KW_FOR LPAREN ForHeader RPAREN KW_DO Statement
+ForStatement → KW_FOR ForHeader KW_DO Statement
 
-ForHeader → [Assignment] SEMICOLON [Condition] SEMICOLON [Exp]
+ForHeader → LPAREN [Assignment] SEMICOLON [Condition] SEMICOLON [Exp] RPAREN
+            | Identifer kwIN Identifer
 
-Assignment → LValue ASSIGN Condition 
-           | LValue PLUSEQUAL Condition 
-           | LValue MINUSEQUALS Condition
-           | kwNew TypeIdentifer lparen Constant rparen
-           | LBRACKET [ Condition ] { SemiColon Condition} RBRACKET
+Assignment → LValue AssignmentOperators Condition
 
-CallStatement → KW CALL IDENTIFIER LPAREN RPAREN
+AssignmentOperators → ASSIGN | PLUSEQUAL | MINUSEQUALS
+
+ReturnStatement → KW_RETURN Assignable
+
+CallStatement → KW CALL IDENTIFIER LPAREN CallParamList RPAREN
+
+CallParamList → [Condition] {SEMICOLON Condition}
 
 ReadStatement → KW READ LValue
 
@@ -77,6 +84,7 @@ Factor → LPAREN Condition RPAREN
         | CharLiteral
         | LValue
         | ArrayLiteral
+        | CallStatement
 
 ArrayLiteral → LBRACKET [ Exp { COMMA Exp } ] RBRACKET
 

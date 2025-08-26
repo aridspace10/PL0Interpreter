@@ -15,6 +15,8 @@ data AssignedType = IntType
                     | BoolType 
                     | RefType String 
                     | SubType Int Int
+                    | ProcedureType AssignedType
+                    | NoneType
                     | StrType 
                     | CharType
                     | ArrType AssignedType deriving (Show, Eq)
@@ -42,6 +44,7 @@ lookupType id = do
         Just IntType -> return IntType
         Just BoolType -> return BoolType
         Just (ArrType ty) -> return $ ArrType ty
+        Just (ProcedureType ty) -> return $ ProcedureType ty
         Just StrType -> return StrType
         Just CharType -> return CharType
         nothing -> throwError (show symTable ++ "for id: " ++ show id)
@@ -112,7 +115,23 @@ checkDecleraton (DecProcedureDef (ProcedureDef pd blk)) = do
     checkBlock blk
 
 checkProcedureHead :: ProcedureHead -> StaticChecker ()
-checkProcedureHead (ProcedureHead (Identifier id)) = return ()
+checkProcedureHead (ProcedureHead (Identifier id) (ParametersList params) ty) = do
+    Scope symTable errors parent <- get
+    ety <- checkType ty
+    case Map.lookup id symTable of
+        Nothing -> assignVar id (ProcedureType ety)
+        _ -> do 
+            ty <- lookupType id 
+            throwError (id ++ "already has type of " ++ show ty)
+    checkParams params
+    return ()
+
+checkParams :: [Parameter] -> StaticChecker ()
+checkParams [] = return ()
+checkParams ((Parameter (Identifier id) ty):params) = do
+    ety <- checkType ty
+    assignVar id ety
+    checkParams params
 
 checkTypeDef :: [TypeDef] -> StaticChecker ()
 checkTypeDef [] = return ()
@@ -133,6 +152,7 @@ checkType (TypeIdentifer (Identifier tid)) = do
         "int" -> return IntType
         "bool" ->  return BoolType
         _ -> return (RefType tid)
+checkType (None) = return NoneType
 checkType _ = throwError "Unknown Type Given"
 
 
@@ -149,6 +169,9 @@ checkConstDef ((ConstDef (Identifier id) const):cds) = do
                 (ConstNumber (Number op num)) -> assignVar id IntType
                 (ConstIdentifier (Identifier otherid)) -> do
                     ty <- lookupType otherid
+                    assignVar id ty
+                (ConstArray fact) -> do
+                    ty <- checkFactor fact
                     assignVar id ty
         _ -> addError (Error 0 ("Reassignment of " ++ id))
     checkConstDef cds
@@ -206,9 +229,25 @@ checkStatement (WhileStatement cond stat) = do
     checkStatement stat
 checkStatement (CompoundStatement stmtList) = do
     checkStatementList stmtList
-checkStatement (CallStatement id) = return ()
+checkStatement (CallStatement id params) = return ()
 checkStatement (ForStatement header stmt) = do
+    checkForHeader header
     checkStatement stmt
+checkStatement (ReturnStatement assign) = return ()
+
+checkForHeader :: ForHeader -> StaticChecker ()
+checkForHeader (ForRegular assign cond exp) = do
+    case assign of
+        (Assignment lval (AssignOperator op) cond) ->
+            case lval of
+                (LValue (Identifier id) _) -> do
+                    ty <- checkCondition cond
+                    assignVar id ty
+checkForHeader (ForEach (Identifier lid) rid) = do
+    erid <- checkLValue rid
+    case erid of
+        ArrType ty -> assignVar lid ty
+        _ -> throwError ("Can't iterate over " ++ show erid)
 
 checkLValue :: LValue -> StaticChecker AssignedType
 checkLValue (LValue (Identifier id) consts) = 
@@ -259,6 +298,7 @@ checkFactor (CharLiteral _) = return CharType
 checkFactor (FactorNumber _) = return IntType
 checkFactor (FactorLValue lval) = checkLValue lval
 checkFactor (FactorParen cond) = checkCondition cond
+checkFactor (FactorCall (CallStatement (Identifier id) _)) = lookupType id
 checkFactor (ArrayLiteral (exp: exps)) = do
     ty <- checkExp exp
     checkArray exps ty
@@ -272,7 +312,7 @@ checkArray (exp : exps) ty = do
     else throwError "Array is not all of one type"
 
 nullScope :: Scope
-nullScope = Scope Map.empty [] nullScope 
+nullScope = Scope (Map.fromList [("malloc", ProcedureType (ArrType IntType)), ("length", ProcedureType IntType)]) [] nullScope 
 
 runStaticChecker :: StaticChecker a -> Scope -> IO (Either String (a, Scope))
 runStaticChecker action scope = runExceptT (runStateT action scope)

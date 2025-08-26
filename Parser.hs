@@ -8,7 +8,6 @@ import GHC.TypeLits (Nat)
 import FileIO
 import Data.List (filter)
 import Grammer
-import Grammer (Factor(CharLiteral))
 
 assign = ":=";
 colon = ":";
@@ -28,6 +27,9 @@ plus = "+";
 minus = "-";
 times = "*";
 divides = "/";
+logicalOr = "||";
+logicalAnd = "&&";
+logicalXor = "^^";
 kwBegin = "begin";
 kwCall = "call";
 kwConst = "const";
@@ -47,6 +49,8 @@ kwMinusEquals = "-=";
 kwPlusEquals = "+=";
 kwNew = "new";
 kwArray = "array";
+kwArrow = "->";
+kwReturn = "return";
 
 newtype Parser a = P (String -> Maybe (a, String))
 
@@ -181,6 +185,9 @@ parseNum = do
 
 parseConstant :: Parser Constant
 parseConstant = do
+    arr <- parseArrayLiteral
+    return (ConstArray arr)
+    <|> do
     num <- parseNum
     return (ConstNumber num)
     <|> do
@@ -266,8 +273,35 @@ parseProcedureHead = do
     symbol kwProcedure
     id <- identifier
     symbol lparen
+    lst <- parseParametersList
     symbol rparen
-    return (ProcedureHead id)
+    ty <- parseReturnType
+    return (ProcedureHead id lst ty)
+    where
+        parseReturnType = do
+            symbol kwArrow
+            parseType
+            <|> do
+            return None
+
+parseParametersList :: Parser ParametersList
+parseParametersList = do
+    first <- parseParameter
+    rest <- many parseParams
+    return (ParametersList (first : rest))
+    <|> do
+    return (ParametersList [])
+    where 
+        parseParams = do
+            symbol ","
+            parseParameter
+
+parseParameter :: Parser Parameter
+parseParameter = do
+    id <- identifier
+    symbol colon
+    ty <- parseType
+    return (Parameter id ty)
 
 parseIfStatement :: Parser Statement
 parseIfStatement = do
@@ -282,32 +316,20 @@ parseIfStatement = do
 parseAssignment :: Parser Statement
 parseAssignment = do
     lval <- parseLValue
-    symbol assign
-    symbol kwNew
-    ty <- parseTypeIdentifer
-    symbol lparen
-    c <- parseConstant
-    symbol rparen
-    return (ArrayCreation lval ty c)
-    <|> do
-    lval <- parseLValue
-    symbol assign
+    op <- parseAssignmentOperator
     cond <- parseCondition
-    return (Assignment "" lval cond)
+    return (Assignment lval op cond)
+
+parseAssignmentOperator :: Parser AssignOperator
+parseAssignmentOperator = do
+    symbol "+="
+    return (AssignOperator "+=")
     <|> do
-    lval <- parseLValue
-    symbol kwPlusEquals
-    cond <- parseCondition
-    return (Assignment "+" lval cond)
+    symbol "-="
+    return (AssignOperator "-=")
     <|> do
-    lval <- parseLValue
-    symbol kwMinusEquals
-    cond <- parseCondition
-    return (Assignment "-" lval cond)
-  where
-    parseConds = do
-        symbol ","
-        parseCondition 
+    symbol ":="
+    return (AssignOperator ":=")
 
 parseReadStatement :: Parser Statement
 parseReadStatement = do
@@ -320,8 +342,22 @@ parseCallStatement = do
     symbol kwCall
     ident <- identifier
     symbol lparen
+    lst <- parseCallParamList
     symbol rparen
-    return (CallStatement ident)
+    return (CallStatement ident lst)
+
+parseCallParamList :: Parser CallParamList
+parseCallParamList = do
+    first <- parseCondition
+    rest <- many parseConditons
+    return (CallParamList (first : rest))
+    <|> do
+    return (CallParamList [])
+    where
+        parseConditons = do
+            symbol ","
+            parseCondition
+
 
 parseWhileStatement :: Parser Statement
 parseWhileStatement = do
@@ -353,26 +389,38 @@ parseStatement =
     <|> parseWhileStatement
     <|> parseIfStatement
     <|> parseForStatement
+    <|> parseReturnStatement
     <|> parseCompoundStatement
+
+parseReturnStatement :: Parser Statement
+parseReturnStatement = do
+    symbol kwReturn
+    cond <- parseCondition
+    return (ReturnStatement cond)
 
 parseForStatement :: Parser Statement
 parseForStatement = do
     symbol kwFor
-    symbol lparen
     header <- parseForHeader
-    symbol rparen
     symbol kwDo
     stat <- parseStatement
     return (ForStatement header stat)
 
 parseForHeader :: Parser ForHeader
 parseForHeader = do
+    symbol lparen
     assign <- parseAssignment 
     symbol semicolon
     cond <- parseCondition
     symbol semicolon
     exp <- parseExp
-    return (ForHeader assign cond exp)
+    symbol rparen
+    return (ForRegular assign cond exp)
+    <|> do
+    lid <- identifier
+    symbol "in"
+    rid <- parseLValue
+    return (ForEach lid rid)
 
 peekSymbol :: String -> Parser Bool
 peekSymbol s = P $ \cs ->
@@ -441,14 +489,14 @@ parseAdditionalExp = do
 parseTerm :: Parser Term
 parseTerm = do
     f <- parseFactor
-    symbol "*"
+    symbol times
     t <- parseTerm
-    return (BinaryTerm f "*" t)
+    return (BinaryTerm f times t)
     <|> do
     f <- parseFactor
-    symbol "/"
+    symbol divides
     t <- parseTerm
-    return (BinaryTerm f "/" t)
+    return (BinaryTerm f divides t)
     <|> do
     f <- parseFactor
     return (SingleFactor f)
@@ -456,34 +504,34 @@ parseTerm = do
 
 parseRelOp :: Parser RelOp
 parseRelOp = do
-    symbol "="
-    return (RelOp "=")
+    symbol equal
+    return (RelOp equal)
     <|> do
-    symbol ">"
-    return (RelOp ">")
+    symbol less
+    return (RelOp less)
     <|> do
-    symbol ">="
-    return (RelOp ">=")
+    symbol lesseq
+    return (RelOp lesseq)
     <|> do
-    symbol "<"
-    return (RelOp "<")
+    symbol greater
+    return (RelOp greater)
     <|> do
-    symbol "<="
-    return (RelOp "<=")
+    symbol greatereq
+    return (RelOp greatereq)
     <|> do
-    symbol "!="
-    return (RelOp "!=")
+    symbol nequal
+    return (RelOp nequal)
 
 parseLogOp :: Parser LogOp
 parseLogOp = do
-    symbol "&&"
-    return (LogOp "&&")
+    symbol logicalAnd
+    return (LogOp logicalAnd)
     <|> do
-    symbol "||"
-    return (LogOp "||")
+    symbol logicalOr
+    return (LogOp logicalOr)
     <|> do
-    symbol "^^"
-    return (LogOp "^^")
+    symbol logicalXor
+    return (LogOp logicalXor)
 
 parseCondition :: Parser Condition
 parseCondition = do
@@ -511,20 +559,16 @@ parseRelCondition = do
 
 
 parseFactor :: Parser Factor
-parseFactor =
-        (FactorNumber <$> number)
-    <|> (FactorLValue <$> parseLValue)
-    <|> do
+parseFactor = do
         symbol lparen
         cond <- parseCondition
         symbol rparen
         return (FactorParen cond)
     <|> do
-        symbol lbracket
-        fcond <- parseExp
-        rcond <- many parseManyExp
-        symbol rbracket
-        return (ArrayLiteral (fcond : rcond))
+        parseArrayLiteral
+    <|> do
+        call <- parseCallStatement
+        return (FactorCall call)
     <|> do
         symbol "\""
         parseChars ""
@@ -533,6 +577,16 @@ parseFactor =
         c <- item 
         symbol "\'"
         return (CharLiteral c)
+    <|> (FactorNumber <$> number)
+    <|> (FactorLValue <$> parseLValue)
+
+parseArrayLiteral :: Parser Factor
+parseArrayLiteral = do
+    symbol lbracket
+    fcond <- parseExp
+    rcond <- many parseManyExp
+    symbol rbracket
+    return (ArrayLiteral (fcond : rcond))
     where
         parseManyExp = do
             symbol ","

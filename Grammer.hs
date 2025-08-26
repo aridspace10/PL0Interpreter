@@ -14,30 +14,39 @@ data ConstDef = ConstDef Identifier Constant deriving (Show)
 data Constant
   = ConstNumber Number
   | ConstIdentifier Identifier
+  | ConstArray Factor
   | ConstMinus Constant deriving (Show)
 data TypeDefList = TypeDefList [TypeDef] deriving (Show)
 data TypeDef = TypeDef Identifier Type deriving (Show)
 data Type =
     TypeIdentifer Identifier
     | ArrayType Type
-    | SubrangeType Constant Constant deriving (Show)
+    | SubrangeType Constant Constant
+    | None deriving (Show)
 data VarDeclList = VarDeclList [VarDecl] deriving (Show)
 data VarDecl = VarDecl Identifier Type deriving (Show)
 data ProcedureDef = ProcedureDef ProcedureHead Block deriving (Show)
-data ProcedureHead = ProcedureHead Identifier deriving Show
+data ProcedureHead = ProcedureHead Identifier ParametersList Type deriving Show
+data ParametersList = ParametersList [Parameter] deriving Show
+data Parameter = Parameter Identifier Type deriving Show
 data StatementList = ComplexStatement Statement StatementList | SimpleStatement Statement | EmptyStatement deriving Show
 data Statement =
-    Assignment String LValue Condition
-    | ArrayCreation LValue Type Constant
-    | CallStatement Identifier
+    Assignment LValue AssignOperator Condition
+    | CallStatement Identifier CallParamList
     | ReadStatement LValue
     | WriteStatement Exp
     | WhileStatement Condition Statement
     | IfStatement Condition Statement Statement
     | ForStatement ForHeader Statement
+    | ReturnStatement Condition
     | CompoundStatement StatementList deriving Show
 
-data ForHeader = ForHeader Statement Condition Exp deriving Show
+data AssignOperator = AssignOperator String deriving Show
+
+data CallParamList = CallParamList [Condition] deriving Show
+
+data ForHeader = ForEach Identifier LValue
+                | ForRegular Statement Condition Exp deriving Show
 
 data Exp =
     SingleExp String Term
@@ -71,6 +80,7 @@ data Factor =
     | ArrayLiteral [Exp]
     | String [Char]
     | CharLiteral Char
+    | FactorCall Statement
     deriving (Show)
 
 data LValue = LValue Identifier [Constant] deriving (Show)
