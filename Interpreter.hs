@@ -36,6 +36,8 @@ data Value = IntVal (Maybe Int)
             | BoolVal (Maybe Bool)
             | ArrayContent [Value]
             | ArrayVal Value
+            | StringVal (Maybe Int)
+            | CharVal (Maybe Char)
             | Uninitialized
             | Undefined  
             | NotUsed
@@ -182,7 +184,11 @@ evalType (TypeIdentifer (Identifier ty)) = do
     then return (IntVal Nothing)
     else if ty == "bool"
     then return (BoolVal Nothing)
-    else throwError ("Unknown Type ")
+    else if ty == "string"
+    then return (StringVal Nothing) 
+    else if ty == "char"
+    then return (CharVal Nothing)
+    else throwError ("Unknown Type")
 
 evalStatementList :: StatementList -> Interpreter ()
 evalStatementList (ComplexStatement stmt stmtList) = do
