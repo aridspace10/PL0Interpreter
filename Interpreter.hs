@@ -361,6 +361,24 @@ evalStatement (Assignment lval (AssignOperator op) cond) = do
                                 ("length", IntVal (Just size)) -> do
                                     assignVar id (IntVal (Just size))
                                     return (Left ())
+                        (TempString str) -> do
+                            t <- lookupVar id
+                            case t of
+                                (StringVal _) -> do
+                                    initaladd <- getAddress id
+                                    assignMemory initaladd NotUsed
+                                    env <- get
+                                    let vEnv = varEnv env
+                                    let address = nextFree vEnv
+                                    assignAddress (StringVal (length str)) address
+                                    address' <- strBuild (address + 1) str
+                                    env' <- get
+                                    let vEnv' = varEnv env'
+                                    let newVEnv = vEnv' {nextFree = address + 1 }
+                                    put env { varEnv = newVEnv }
+                                    return (Left ())
+                                _ -> throwError ("Cant Assign String to value of type " ++ show t)
+                            
                         _ -> do
                             assignVar id econd
                             return (Left ())
