@@ -41,7 +41,7 @@ data Procedure = Procedure {
 data Value = IntVal (Maybe Int) 
             | BoolVal (Maybe Bool)
             | ArrayContent [Value]
-            | ArrayVal Value
+            | ArrayVal Value Int
             | StringVal (Maybe Int)
             | CharVal (Maybe Char)
             | TempString [Char]
@@ -49,7 +49,7 @@ data Value = IntVal (Maybe Int)
             | Uninitialized
             | Undefined  
             | NotUsed
-            deriving (Show, Eq)
+            deriving (Show, Eq, Data)
 
 type Builtin = [Condition] -> Interpreter Value
 builtinMap :: Map.Map String Builtin

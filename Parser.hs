@@ -579,6 +579,13 @@ parseFactor = do
         return (CharLiteral c)
     <|> (FactorNumber <$> number)
     <|> (FactorLValue <$> parseLValue)
+    where
+        parseChars chars = do
+            symbol "\""
+            return (String chars)
+            <|> do
+            c <- item
+            parseChars (chars ++ [c])
 
 parseArrayLiteral :: Parser Factor
 parseArrayLiteral = do
@@ -591,12 +598,6 @@ parseArrayLiteral = do
         parseManyExp = do
             symbol ","
             parseExp
-        parseChars chars = do
-            symbol "\""
-            return (String chars)
-            <|> do
-            c <- item
-            parseChars (chars ++ [c])
 
 
 parseLValue :: Parser LValue
