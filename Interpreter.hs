@@ -544,6 +544,12 @@ arrayBuild address (elem:elems) = do
     assignMemory address elem
     arrayBuild (address + 1) elems
 
+strBuild :: Int -> [String] -> Interpreter Int
+strBuild add [] = return add
+strBuild add (elem:elems) = do
+    assignMemory address (CharVal elem)
+    strBuild (address + 1) elems
+
 assignArray :: Value -> Int -> Int -> Interpreter Int
 assignArray _ 0 add = return add
 assignArray ty left address = do
