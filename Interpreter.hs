@@ -13,6 +13,7 @@ import Control.Monad.Except
 import qualified Data.Map as Map
 import qualified Data.Vector as V
 import Grammer
+import Control.Monad.IO.Class (MonadIO(liftIO))
 
 type Address       = Int
 type MemoryMapping = Map.Map String Address
@@ -104,6 +105,7 @@ getArrayContent _ 0 vals = return (ArrayContent vals)
 getArrayContent address left vals = do
     val <- accessMemory address
     getArrayContent (address + 1) (left - 1) (vals ++ [val])
+
 
 lookupVar :: String -> Interpreter Value
 lookupVar name = do
@@ -280,7 +282,21 @@ print' (ArrayContent vals) _ = do
     liftIO $ putStr "["
     printArray vals
     liftIO $ putStr "]\n"
+print' (StringVal length) (SingleExp "" (SingleFactor (FactorLValue (LValue (Identifier id) [])))) = do
+    liftIO $ putStr "\""
+    add <- getAddress id
+    case length of
+        (Just val) -> printStringContent (add + 1) val
+    liftIO $ putStr "\"\n"
 print' v _ = throwError ("Error in print: " ++ show v)
+
+printStringContent :: Int -> Int -> Interpreter ()
+printStringContent add 0 = return ()
+printStringContent add length = do
+    (CharVal (Just char)) <- accessMemory add
+    liftIO $ putChar char
+    printStringContent (add + 1) (length - 1)
+
 
 printArray :: [Value] -> Interpreter ()
 printArray [] = return ()
@@ -370,7 +386,8 @@ evalStatement (Assignment lval (AssignOperator op) cond) = do
                                     env <- get
                                     let vEnv = varEnv env
                                     let address = nextFree vEnv
-                                    assignAddress (StringVal (length str)) address
+                                    assignAddress id address
+                                    assignMemory address (StringVal (Just (length str)))
                                     address' <- strBuild (address + 1) str
                                     env' <- get
                                     let vEnv' = varEnv env'
@@ -378,7 +395,6 @@ evalStatement (Assignment lval (AssignOperator op) cond) = do
                                     put env { varEnv = newVEnv }
                                     return (Left ())
                                 _ -> throwError ("Cant Assign String to value of type " ++ show t)
-                            
                         _ -> do
                             assignVar id econd
                             return (Left ())
@@ -544,11 +560,15 @@ arrayBuild address (elem:elems) = do
     assignMemory address elem
     arrayBuild (address + 1) elems
 
-strBuild :: Int -> [String] -> Interpreter Int
-strBuild add [] = return add
-strBuild add (elem:elems) = do
-    assignMemory address (CharVal elem)
+strBuild :: Int -> [Char] -> Interpreter Int
+strBuild address [] = return address
+strBuild address (elem:elems) = do
+    assignMemory address (CharVal $ Just elem)
     strBuild (address + 1) elems
+
+stringToChar :: String -> Char
+stringToChar [c] = c
+stringToChar _   = error "Expected a single-character string"
 
 assignArray :: Value -> Int -> Int -> Interpreter Int
 assignArray _ 0 add = return add
