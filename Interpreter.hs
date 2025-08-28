@@ -480,9 +480,13 @@ builtin_malloc conds = throwError ("Expecting 1 argument, instead receieved" ++ 
 builtin_free :: [Condition] -> Interpreter Value
 builtin_free [] = return (NotUsed)
 builtin_free (cond:conds) = do
-    econd <- evalCondition cond
-    case econd of
-
+    case cond of
+        SimpleCondition (SimpleRelCondition (SingleExp "" (SingleFactor (FactorLValue (LValue (Identifier id) []))))) -> do
+            address <- getAddress id
+            val <- accessMemory address
+            case val of
+                (ArrayVal _ size) -> free address (size + 1)
+                _ -> free address 1
     builtin_free conds
 
 
