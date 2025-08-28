@@ -477,6 +477,15 @@ builtin_malloc [cond] = do
         _ -> throwError ("Unable to malloc with " ++ show econd)
 builtin_malloc conds = throwError ("Expecting 1 argument, instead receieved" ++ (show $ length conds + 1))
 
+builtin_free :: [Condition] -> Interpreter Value
+builtin_free [] = return (NotUsed)
+builtin_free (cond:conds) = do
+    econd <- evalCondition cond
+    case econd of
+
+    builtin_free conds
+
+
 copyLinearContent :: Address -> Address -> Int -> Interpreter Int
 copyLinearContent _ to 0 = return to
 copyLinearContent from to remaining = do
