@@ -6,5 +6,6 @@ begin
     write a[4];
     a[6] := 2;
     call realloc(a, 2);
-    write a
+    write a;
+    call free(a)
 end
