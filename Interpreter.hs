@@ -13,13 +13,23 @@ import Control.Monad.Except
 import qualified Data.Map as Map
 import qualified Data.Vector as V
 import Grammer
-import Parser (parseStatementList)
+import Parser
 
 type Address       = Int
 type MemoryMapping = Map.Map String Address
 type Memory        = V.Vector Value
 type ProcEnv       = Map.Map String Procedure
 type Params        = [(String, Value)] -- Maps id to type
+
+data Value = IntVal (Maybe Int)
+    | BoolVal (Maybe Bool)
+    | ArrayContent [Value]
+    | ArrayVal Value Int
+    | ReferenceVal String Value
+    | Uninitialized
+    | Undefined
+    | NotUsed
+    deriving (Show, Eq, Data)
 
 data VarEnv = VarEnv {
     mapping :: MemoryMapping,
@@ -39,15 +49,7 @@ data Procedure = Procedure {
   body       :: Block
 } deriving (Show)
 
-data Value = IntVal (Maybe Int)
-           | BoolVal (Maybe Bool)
-           | ArrayContent [Value]
-           | ArrayVal Value Int
-           | ReferenceVal String Value
-           | Uninitialized
-           | Undefined
-           | NotUsed
-           deriving (Show, Eq, Data)
+type Interpreter a = StateT Env (ExceptT String IO) a
 
 type Builtin = [Condition] -> Interpreter Value
 builtinMap :: Map.Map String Builtin
@@ -56,8 +58,6 @@ builtinMap = Map.fromList [ ("malloc", builtin_malloc), ("length", builtin_lengt
 sameConstructor :: Value -> Value -> Bool
 sameConstructor (ArrayContent _) (ArrayVal _ _) = True
 sameConstructor a b = toConstr a == toConstr b
-
-type Interpreter a = StateT Env (ExceptT String IO) a
 
 getAddress :: String -> Interpreter Int
 getAddress name = do
