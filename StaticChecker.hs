@@ -16,6 +16,7 @@ data AssignedType = IntType
                     | SubType Int Int
                     | ProcedureType AssignedType
                     | NoneType
+                    | ConstantType AssignedType
                     | ArrType AssignedType deriving (Show, Eq)
 data Scope = Scope SymTable [Error] Scope
 type SymTable = Map.Map String AssignedType
@@ -42,6 +43,7 @@ lookupType id = do
         Just BoolType -> return BoolType
         Just (ArrType ty) -> return $ ArrType ty
         Just (ProcedureType ty) -> return $ ProcedureType ty
+        Just (ConstantType ty) -> return (ConstantType ty)
         nothing -> throwError (show symTable ++ " with id: " ++ id)
 
 
