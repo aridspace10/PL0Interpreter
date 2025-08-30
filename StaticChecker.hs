@@ -163,13 +163,13 @@ checkConstDef ((ConstDef (Identifier id) const):cds) = do
     case lookup id of
         nothing -> do
             case const of
-                (ConstNumber (Number op num)) -> assignVar id IntType
+                (ConstNumber (Number op num)) -> assignVar id (ConstantType IntType)
                 (ConstIdentifier (Identifier otherid)) -> do
                     ty <- lookupType otherid
-                    assignVar id ty
+                    assignVar id (ConstantType ty)
                 (ConstArray fact) -> do
                     ty <- checkFactor fact
-                    assignVar id ty
+                    assignVar id (ConstantType ty)
         _ -> addError (Error 0 ("Reassignment of " ++ id))
     checkConstDef cds
 
