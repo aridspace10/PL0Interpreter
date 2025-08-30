@@ -724,14 +724,17 @@ evalLValue (LValue (Identifier id) (const: [])) = do
     initalAdd <- getAddress id
     val <- accessMemory initalAdd
     case (val) of
-        (ArrayVal _ size) -> do
+        (ArrayVal _ size) -> accessSpecificMemory c size initalAdd
+        (StringVal (Just size)) -> accessSpecificMemory c size initalAdd
+        _ -> throwError ("Unable to index of type " ++ show val)
+    where
+        accessSpecificMemory c size initalAdd = do
             case (c) of
                 (IntVal (Just val)) -> do
                     case (size > val) of
                         True -> accessMemory (initalAdd + val + 1)
                         False -> throwError ("Unable to index into element " ++ show val ++ " of array size " ++ show size)
                 _ -> throwError ("Unable to use index of type " ++ show c)
-        _ -> throwError ("Unable to index of type " ++ show val)
 
 emptyEnv :: Env
 emptyEnv = Env {
