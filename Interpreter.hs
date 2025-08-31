@@ -256,10 +256,13 @@ evalStatementList (SimpleStatement stmt) = do
         Right val -> return (Right val)
 
 print' :: Value -> Exp -> Interpreter ()
+print' (CharVal Nothing) _ = liftIO $ putStr ("null")
 print' (IntVal Nothing) _ = liftIO $ putStr ("null")
 print' (BoolVal Nothing) _ = liftIO $ putStr ("null")
+print' (CharVal (Just v)) Empty = liftIO $ putStr (show v)
 print' (IntVal (Just v)) Empty = liftIO $ putStr (show v)
 print' (BoolVal (Just v)) Empty = liftIO $ putStr (show v)
+print' (CharVal (Just v)) _ = liftIO $ print v
 print' (IntVal (Just v)) _ = liftIO $ print v
 print' (BoolVal (Just v)) _ = liftIO $ print v
 print' (ArrayVal ty space) (SingleExp "" (SingleFactor (FactorLValue (LValue (Identifier id) [])))) = do
