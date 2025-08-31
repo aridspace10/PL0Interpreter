@@ -8,7 +8,6 @@ import GHC.TypeLits (Nat)
 import FileIO
 import Data.List (filter)
 import Grammer
-import Grammer (Statement(Assignment))
 
 assign = ":=";
 colon = ":";
@@ -570,8 +569,23 @@ parseFactor = do
     <|> do
         call <- parseCallStatement
         return (FactorCall call)
+    <|> do
+        symbol "\""
+        parseChars ""
+    <|> do
+        symbol "\'"
+        c <- item 
+        symbol "\'"
+        return (CharLiteral c)
     <|> (FactorNumber <$> number)
     <|> (FactorLValue <$> parseLValue)
+    where
+        parseChars chars = do
+            symbol "\""
+            return (String chars)
+            <|> do
+            c <- item
+            parseChars (chars ++ [c])
 
 parseArrayLiteral :: Parser Factor
 parseArrayLiteral = do
@@ -584,6 +598,7 @@ parseArrayLiteral = do
         parseManyExp = do
             symbol ","
             parseExp
+
 
 parseLValue :: Parser LValue
 parseLValue = do

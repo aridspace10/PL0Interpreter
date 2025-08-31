@@ -8,6 +8,7 @@ import Control.Monad.Except
 import qualified Data.Map as Map
 import GHC.Natural ( Natural )
 import Grammer
+import Grammer (Factor(CharLiteral))
 
 data Error = Error Natural String
 data AssignedType = IntType 
@@ -17,6 +18,8 @@ data AssignedType = IntType
                     | ProcedureType AssignedType
                     | NoneType
                     | ConstantType AssignedType
+                    | StrType 
+                    | CharType
                     | ArrType AssignedType deriving (Show, Eq)
 data Scope = Scope SymTable [Error] Scope
 type SymTable = Map.Map String AssignedType
@@ -44,7 +47,9 @@ lookupType id = do
         Just (ArrType ty) -> return $ ArrType ty
         Just (ProcedureType ty) -> return $ ProcedureType ty
         Just (ConstantType ty) -> return (ConstantType ty)
-        nothing -> throwError (show symTable ++ " with id: " ++ id)
+        Just StrType -> return StrType
+        Just CharType -> return CharType
+        nothing -> throwError (show symTable ++ "for id: " ++ show id)
 
 
 getUnresolvedTypes :: [(String , AssignedType)] -> [(String , AssignedType)] -> [(String , AssignedType)]
@@ -183,6 +188,8 @@ checkVarDef ((VarDecl (Identifier id) ty):vds) = do
                     case tid' of
                         "int" -> assignVar id IntType
                         "bool" -> assignVar id BoolType
+                        "string" -> assignVar id StrType
+                        "char" -> assignVar id CharType
                         _ -> assignVar id (RefType tid')
         (ArrayType ty) -> do
             g <- checkType ty
@@ -196,31 +203,13 @@ checkStatementList (ComplexStatement stat statLst) = do
     checkStatement stat
     checkStatementList statLst
 
-checkAccessing :: AssignedType -> [Constant] -> StaticChecker AssignedType
-checkAccessing (ArrType (ArrType (innerty))) [] = throwError "Cannot assign Condition to array"
-checkAccessing (ArrType ty) [] = return (ArrType ty)
-checkAccessing ty [] = return ty
-checkAccessing (ArrType innerty) (c:cs) = checkAccessing innerty cs
-checkAccessing (ty) (c:cs) = throwError "Int is not subscriptable"
-
 checkStatement :: Statement -> StaticChecker ()
-checkStatement (Assignment lval (AssignOperator op) cond) = do
-    checkLValue lval
+checkStatement (Assignment lval ty cond) = do
+    targetTy <- checkLValue lval
     condType <- checkCondition cond
-    case (lval) of
-        (LValue (Identifier id) const) -> do
-            idType <- lookupType id
-            targetTy <- checkAccessing idType const
-            case condType of
-                (ProcedureType innerty) -> do
-                    if innerty == targetTy
-                    then return ()
-                    else throwError ("Cannot Assign Procedure with return type " ++ (show condType) ++ " to " ++ (show targetTy))
-                _ ->
-                    if condType == targetTy
-                    then return ()
-                    else throwError ("Cannot Assign " ++ (show condType) ++ " to " ++ (show targetTy))
-        _ -> throwError "IDK how"
+    if condType == targetTy
+    then return ()
+    else throwError ("Cannot Assign " ++ (show condType) ++ " to " ++ (show targetTy))
 checkStatement (IfStatement cond stat1 stat2) = do
     checkCondition cond
     checkStatement stat1
@@ -261,7 +250,17 @@ checkLValue (LValue (Identifier id) consts) =
     case id of
         "True" -> return BoolType
         "False" -> return BoolType
-        _ -> lookupType id
+        _ -> do
+            ty <- lookupType id
+            checkAccess ty consts
+    where
+        checkAccess StrType [] = return StrType
+        checkAccess StrType [const] = return CharType
+        checkAccess CharType [] = return CharType
+        checkAccess (ArrType ty) [] = return (ArrType ty)
+        checkAccess (ArrType ty) (const:consts) = checkAccess ty consts 
+        checkAccess ty [] = return ty
+        checkAccess ty consts = throwError ("Cannot Index into " ++ show ty)
 
 checkCondition :: Condition -> StaticChecker AssignedType
 checkCondition (NotCondition cond) = checkCondition cond
@@ -290,6 +289,8 @@ checkTerm (SingleFactor fact) = checkFactor fact
 checkTerm (BinaryTerm fact op term) = return IntType
 
 checkFactor :: Factor -> StaticChecker AssignedType
+checkFactor (String _) = return StrType
+checkFactor (CharLiteral _) = return CharType
 checkFactor (FactorNumber _) = return IntType
 checkFactor (FactorLValue lval) = checkLValue lval
 checkFactor (FactorParen cond) = checkCondition cond

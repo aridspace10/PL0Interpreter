@@ -13,7 +13,7 @@ import Control.Monad.Except
 import qualified Data.Map as Map
 import qualified Data.Vector as V
 import Grammer
-import Parser (parseStatementList)
+import Control.Monad.IO.Class (MonadIO(liftIO))
 
 type Address       = Int
 type MemoryMapping = Map.Map String Address
@@ -39,15 +39,18 @@ data Procedure = Procedure {
   body       :: Block
 } deriving (Show)
 
-data Value = IntVal (Maybe Int)
-           | BoolVal (Maybe Bool)
-           | ArrayContent [Value]
-           | ArrayVal Value Int
-           | ReferenceVal String Value
-           | Uninitialized
-           | Undefined
-           | NotUsed
-           deriving (Show, Eq, Data)
+data Value = IntVal (Maybe Int) 
+            | BoolVal (Maybe Bool)
+            | ArrayContent [Value]
+            | ArrayVal Value Int
+            | StringVal (Maybe Int)
+            | CharVal (Maybe Char)
+            | TempString [Char]
+            | ReferenceVal String Value
+            | Uninitialized
+            | Undefined  
+            | NotUsed
+            deriving (Show, Eq, Data)
 
 type Builtin = [Condition] -> Interpreter Value
 builtinMap :: Map.Map String Builtin
@@ -105,6 +108,7 @@ getArrayContent _ 0 vals = return (ArrayContent vals)
 getArrayContent address left vals = do
     val <- accessMemory address
     getArrayContent (address + 1) (left - 1) (vals ++ [val])
+
 
 lookupVar :: String -> Interpreter Value
 lookupVar name = do
@@ -235,7 +239,11 @@ evalType (TypeIdentifer (Identifier ty)) = do
     then return (IntVal Nothing)
     else if ty == "bool"
     then return (BoolVal Nothing)
-    else throwError ("Unknown Type ")
+    else if ty == "string"
+    then return (StringVal Nothing) 
+    else if ty == "char"
+    then return (CharVal Nothing)
+    else throwError ("Unknown Type")
 
 evalStatementList :: StatementList -> Interpreter (Either () Value)
 evalStatementList (ComplexStatement stmt stmtList) = do
@@ -251,10 +259,13 @@ evalStatementList (SimpleStatement stmt) = do
         Right val -> return (Right val)
 
 print' :: Value -> Exp -> Interpreter ()
+print' (CharVal Nothing) _ = liftIO $ putStr ("null")
 print' (IntVal Nothing) _ = liftIO $ putStr ("null")
 print' (BoolVal Nothing) _ = liftIO $ putStr ("null")
+print' (CharVal (Just v)) Empty = liftIO $ putStr (show v)
 print' (IntVal (Just v)) Empty = liftIO $ putStr (show v)
 print' (BoolVal (Just v)) Empty = liftIO $ putStr (show v)
+print' (CharVal (Just v)) _ = liftIO $ print v
 print' (IntVal (Just v)) _ = liftIO $ print v
 print' (BoolVal (Just v)) _ = liftIO $ print v
 print' (ArrayVal ty space) (SingleExp "" (SingleFactor (FactorLValue (LValue (Identifier id) [])))) = do
@@ -277,7 +288,21 @@ print' (ArrayContent vals) _ = do
     liftIO $ putStr "["
     printArray vals
     liftIO $ putStr "]\n"
+print' (StringVal length) (SingleExp "" (SingleFactor (FactorLValue (LValue (Identifier id) [])))) = do
+    liftIO $ putStr "\""
+    add <- getAddress id
+    case length of
+        (Just val) -> printStringContent (add + 1) val
+    liftIO $ putStr "\"\n"
 print' v _ = throwError ("Error in print: " ++ show v)
+
+printStringContent :: Int -> Int -> Interpreter ()
+printStringContent add 0 = return ()
+printStringContent add length = do
+    (CharVal (Just char)) <- accessMemory add
+    liftIO $ putChar char
+    printStringContent (add + 1) (length - 1)
+
 
 printArray :: [Value] -> Interpreter ()
 printArray [] = return ()
@@ -358,6 +383,24 @@ evalStatement (Assignment lval (AssignOperator op) cond) = do
                                 ("length", IntVal (Just size)) -> do
                                     assignVar id (IntVal (Just size))
                                     return (Left ())
+                        (TempString str) -> do
+                            t <- lookupVar id
+                            case t of
+                                (StringVal _) -> do
+                                    initaladd <- getAddress id
+                                    assignMemory initaladd NotUsed
+                                    env <- get
+                                    let vEnv = varEnv env
+                                    let address = nextFree vEnv
+                                    assignAddress id address
+                                    assignMemory address (StringVal (Just (length str)))
+                                    address' <- strBuild (address + 1) str
+                                    env' <- get
+                                    let vEnv' = varEnv env'
+                                    let newVEnv = vEnv' {nextFree = address + 1 }
+                                    put env { varEnv = newVEnv }
+                                    return (Left ())
+                                _ -> throwError ("Cant Assign String to value of type " ++ show t)
                         _ -> do
                             assignVar id econd
                             return (Left ())
@@ -536,6 +579,16 @@ arrayBuild address (elem:elems) = do
     assignMemory address elem
     arrayBuild (address + 1) elems
 
+strBuild :: Int -> [Char] -> Interpreter Int
+strBuild address [] = return address
+strBuild address (elem:elems) = do
+    assignMemory address (CharVal $ Just elem)
+    strBuild (address + 1) elems
+
+stringToChar :: String -> Char
+stringToChar [c] = c
+stringToChar _   = error "Expected a single-character string"
+
 assignArray :: Value -> Int -> Int -> Interpreter Int
 assignArray _ 0 add = return add
 assignArray ty left address = do
@@ -629,6 +682,9 @@ evalExp (SingleExp str term) = do
         (ArrayContent e) -> return (ArrayContent e)
         (ArrayVal e s) -> return (ArrayVal e s)
         (ReferenceVal str val) -> return (ReferenceVal str val)
+        (CharVal e) -> return (CharVal e)
+        (TempString e) -> return (TempString e)
+        (StringVal e) -> return (StringVal e)
         _ -> throwError $ ("Error in evalTerm: " ++ show val ++ "\n Env: " ++ show env)
 evalExp (BinaryExp str term exp) = do
     eval <- evalTerm term
@@ -667,6 +723,8 @@ evalFactor (FactorCall call) = do
     case g of
         Left _ -> throwError "Compiler Error in evalFactor"
         Right val -> return val
+evalFactor (String chars) = return (TempString chars)
+evalFactor (CharLiteral char) = return (CharVal (Just char))
 evalFactor (ArrayLiteral exps) = do
     values <- mapM evalExp exps  -- [Exp] -> Interpreter [Value]
     return $ ArrayContent values
@@ -685,14 +743,17 @@ evalLValue (LValue (Identifier id) (const: [])) = do
     initalAdd <- getAddress id
     val <- accessMemory initalAdd
     case (val) of
-        (ArrayVal _ size) -> do
+        (ArrayVal _ size) -> accessSpecificMemory c size initalAdd
+        (StringVal (Just size)) -> accessSpecificMemory c size initalAdd
+        _ -> throwError ("Unable to index of type " ++ show val)
+    where
+        accessSpecificMemory c size initalAdd = do
             case (c) of
                 (IntVal (Just val)) -> do
                     case (size > val) of
                         True -> accessMemory (initalAdd + val + 1)
                         False -> throwError ("Unable to index into element " ++ show val ++ " of array size " ++ show size)
                 _ -> throwError ("Unable to use index of type " ++ show c)
-        _ -> throwError ("Unable to index of type " ++ show val)
 
 emptyEnv :: Env
 emptyEnv = Env {

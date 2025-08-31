@@ -1,0 +1,10 @@
+var a: string;
+    c: char;
+begin
+    a := "Hello There";
+    write a;
+    c := a[4];
+    write c;
+    a[4] := 'y';
+    write a[4]
+end
