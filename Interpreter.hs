@@ -532,6 +532,11 @@ builtin_free (cond:conds) = do
                 _ -> free address 1
     builtin_free conds
 
+free :: Address -> Int -> Interpreter Address
+free add 0 = return add
+free add left = do
+    assignMemory add NotUsed
+    free (add + 1) (left - 1)
 
 copyLinearContent :: Address -> Address -> Int -> Interpreter Int
 copyLinearContent _ to 0 = return to
