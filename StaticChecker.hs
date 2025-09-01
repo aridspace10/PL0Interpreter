@@ -254,6 +254,9 @@ checkLValue (LValue (Identifier id) consts) =
             ty <- lookupType id
             checkAccess ty consts
     where
+        checkAccess (ConstantType ty) consts = do
+            ety <- checkAccess ty consts
+            return (ConstantType ety)
         checkAccess StrType [] = return StrType
         checkAccess StrType [const] = return CharType
         checkAccess CharType [] = return CharType
