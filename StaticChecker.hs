@@ -206,10 +206,19 @@ checkStatementList (ComplexStatement stat statLst) = do
 checkStatement :: Statement -> StaticChecker ()
 checkStatement (Assignment lval ty cond) = do
     targetTy <- checkLValue lval
-    condType <- checkCondition cond
-    if condType == targetTy
-    then return ()
-    else throwError ("Cannot Assign " ++ (show condType) ++ " to " ++ (show targetTy))
+    case targetTy of
+        (ConstantType ty) -> throwError "Can't Assign to constant type"
+        _ -> do
+            condType <- checkCondition cond
+            case condType of
+                ConstantType ty -> do
+                    if condType == targetTy
+                    then return ()
+                    else throwError ("Cannot Assign " ++ (show condType) ++ " to " ++ (show targetTy))
+                _ -> do
+                    if condType == targetTy
+                    then return ()
+                    else throwError ("Cannot Assign " ++ (show condType) ++ " to " ++ (show targetTy))
 checkStatement (IfStatement cond stat1 stat2) = do
     checkCondition cond
     checkStatement stat1
