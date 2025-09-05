@@ -234,7 +234,11 @@ checkStatement (WhileStatement cond stat) = do
     checkStatement stat
 checkStatement (CompoundStatement stmtList) = do
     checkStatementList stmtList
-checkStatement (CallStatement id params) = return ()
+checkStatement (CallStatement id params) = do
+    case Map.lookup id symTable of
+        Nothing -> throwError ("Variable (" ++ id ++ ") is not defined")
+        (ProcedureType ty) -> return ty
+        ty -> throwError ("Can't Call variable of type: " ++ ty)
 checkStatement (ForStatement header stmt) = do
     checkForHeader header
     checkStatement stmt
