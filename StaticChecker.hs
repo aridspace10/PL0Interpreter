@@ -203,7 +203,7 @@ checkStatementList (ComplexStatement stat statLst) = do
     checkStatement stat
     checkStatementList statLst
 
-checkStatement :: Statement -> StaticChecker ()
+checkStatement :: Statement -> StaticChecker (Either () AssignedType)
 checkStatement (Assignment lval ty cond) = do
     targetTy <- checkLValue lval
     case targetTy of
@@ -213,36 +213,40 @@ checkStatement (Assignment lval ty cond) = do
             case condType of
                 ConstantType ty -> do
                     if condType == targetTy
-                    then return ()
+                    then return (Left ())
                     else throwError ("Cannot Assign " ++ (show condType) ++ " to " ++ (show targetTy))
                 _ -> do
                     if condType == targetTy
-                    then return ()
+                    then return (Left ())
                     else throwError ("Cannot Assign " ++ (show condType) ++ " to " ++ (show targetTy))
 checkStatement (IfStatement cond stat1 stat2) = do
     checkCondition cond
     checkStatement stat1
     checkStatement stat2
+    return (Left ())
 checkStatement (WriteStatement exp) = do
     ty <- checkExp exp
-    return ()
+    return (Left ())
 checkStatement (ReadStatement lval) = do
     ty <- checkLValue lval
-    return ()
+    return (Left ())
 checkStatement (WhileStatement cond stat) = do
     checkCondition cond
     checkStatement stat
+    return (Left ())
 checkStatement (CompoundStatement stmtList) = do
     checkStatementList stmtList
+    return (Left ())
 checkStatement (CallStatement id params) = do
     case Map.lookup id symTable of
         Nothing -> throwError ("Variable (" ++ id ++ ") is not defined")
-        (ProcedureType ty) -> return ty
+        (ProcedureType ty) -> return (Right ty)
         ty -> throwError ("Can't Call variable of type: " ++ ty)
 checkStatement (ForStatement header stmt) = do
     checkForHeader header
     checkStatement stmt
-checkStatement (ReturnStatement assign) = return ()
+    return (Left ())
+checkStatement (ReturnStatement assign) = return (Left ())
 
 checkForHeader :: ForHeader -> StaticChecker ()
 checkForHeader (ForRegular assign cond exp) = do
