@@ -3,7 +3,7 @@ module Runner where
 import Parser
 import Interpreter
 import FileIO
-import StaticChecker (runStaticChecker, nullScope, checkProgram, globalScope)
+import StaticChecker
 import Grammer
 
 getErrors :: Scope -> [Error]
@@ -24,7 +24,12 @@ run path = do
                 case checked of
                     Left err -> putStrLn ("Fatal Static error: " ++ err)
                     Right (_, finalScope) -> do
-                        result <- runInterpreter (evalProgram program) emptyEnv
-                        case result of
-                            Left err -> putStrLn ("Runtime error: " ++ err)
-                            Right (_, env) -> print env
+                        let errs = getErrors finalScope
+                        if null errs
+                        then do
+                            result <- runInterpreter (evalProgram program) emptyEnv
+                            case result of
+                                Left err -> putStrLn ("Runtime error: " ++ err)
+                                Right (_, env) -> print env
+                        else
+                            mapM_ (putStrLn . ("Static error: " ++) . show) errs
