@@ -102,6 +102,7 @@ checkBlock (Block decList compStat) = do
     checkDecList decList
     resolveTypes
     checkStatement compStat
+    return ()
 
 checkDecList :: DecleratonList -> StaticChecker ()
 checkDecList (DecleratonList []) = return ()
