@@ -196,7 +196,7 @@ checkVarDef ((VarDecl (Identifier id) ty):vds) = do
             assignVar id (ArrType g)
     checkVarDef vds
 
-checkStatementList :: StatementList -> StaticChecker ()
+checkStatementList :: StatementList -> StaticChecker (Either () AssignedType)
 checkStatementList (SimpleStatement stat) = do
     checkStatement stat
 checkStatementList (ComplexStatement stat statLst) = do
@@ -237,11 +237,12 @@ checkStatement (WhileStatement cond stat) = do
 checkStatement (CompoundStatement stmtList) = do
     checkStatementList stmtList
     return (Left ())
-checkStatement (CallStatement id params) = do
+checkStatement (CallStatement (Identifier id) params) = do
+    Scope symTable errors parent <- get
     case Map.lookup id symTable of
         Nothing -> throwError ("Variable (" ++ id ++ ") is not defined")
-        (ProcedureType ty) -> return (Right ty)
-        ty -> throwError ("Can't Call variable of type: " ++ ty)
+        (Just (ProcedureType ty)) -> return (Right ty)
+        ty -> throwError ("Can't Call variable of type: " ++ (show ty))
 checkStatement (ForStatement header stmt) = do
     checkForHeader header
     checkStatement stmt
