@@ -21,7 +21,7 @@ data AssignedType = IntType
                     | StrType 
                     | CharType
                     | ArrType AssignedType deriving (Show, Eq)
-data Scope = Scope SymTable [Error] Scope
+data Scope = Scope SymTable [Error] (Maybe Scope)
 type SymTable = Map.Map String AssignedType
 type StaticChecker a = StateT Scope (ExceptT String IO) a
 
@@ -329,8 +329,8 @@ checkArray (exp : exps) ty = do
     then checkArray exps ty
     else throwError "Array is not all of one type"
 
-nullScope :: Scope
-nullScope = Scope (Map.fromList [("malloc", ProcedureType (ArrType IntType)), ("length", ProcedureType IntType)]) [] nullScope 
+globalScope :: Scope
+globalScope = Scope (Map.fromList [("malloc", ProcedureType (ArrType IntType)), ("length", ProcedureType IntType)]) [] Nothing
 
 runStaticChecker :: StaticChecker a -> Scope -> IO (Either String (a, Scope))
 runStaticChecker action scope = runExceptT (runStateT action scope)

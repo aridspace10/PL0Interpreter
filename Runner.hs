@@ -3,12 +3,12 @@ module Runner where
 import Parser
 import Interpreter
 import FileIO
-import StaticChecker (runStaticChecker, nullScope, checkProgram)
+import StaticChecker (runStaticChecker, nullScope, checkProgram, globalScope)
 import Grammer
 
 getErrors :: Scope -> [Error]
-getErrors (Scope _ errs parent) = errs ++ getErrors parent
-getErrors NullScope             = []
+getErrors (Scope _ errs Nothing)     = errs
+getErrors (Scope _ errs (Just p))    = errs ++ getErrors p
 
 run :: FilePath -> IO ()
 run path = do
@@ -20,7 +20,7 @@ run path = do
         case parse parseProgram result of
             Nothing -> putStrLn "Parse error."
             Just (program, _) -> do
-                checked <- runStaticChecker (checkProgram program) nullScope
+                checked <- runStaticChecker (checkProgram program) globalScope
                 case checked of
                     Left err -> putStrLn ("Fatal Static error: " ++ err)
                     Right (_, finalScope) -> do
