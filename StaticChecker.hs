@@ -246,9 +246,13 @@ checkStatement (CompoundStatement stmtList) = do
 checkStatement (CallStatement (Identifier id) params) = do
     Scope symTable errors parent <- get
     case Map.lookup id symTable of
-        Nothing -> throwError ("Variable (" ++ id ++ ") is not defined")
+        Nothing -> do 
+            addError (Error 0 ("Variable (" ++ id ++ ") is not defined"))
+            return (Left ())
         (Just (ProcedureType ty)) -> return (Right ty)
-        ty -> throwError ("Can't Call variable of type: " ++ (show ty))
+        ty -> do
+            addError (Error 0 ("Can't Call variable of type: " ++ (show ty)))
+            return (Left ())
 checkStatement (ForStatement header stmt) = do
     checkForHeader header
     checkStatement stmt
