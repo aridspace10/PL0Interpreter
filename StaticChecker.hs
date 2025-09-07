@@ -207,18 +207,24 @@ checkStatement :: Statement -> StaticChecker (Either () AssignedType)
 checkStatement (Assignment lval ty cond) = do
     targetTy <- checkLValue lval
     case targetTy of
-        (ConstantType ty) -> throwError "Can't Assign to constant type"
+        (ConstantType ty) -> do
+            addError (Error 0 "Can't Reassign Constant")
+            return (Left ())
         _ -> do
             condType <- checkCondition cond
             case condType of
                 ConstantType ty -> do
                     if condType == targetTy
                     then return (Left ())
-                    else throwError ("Cannot Assign " ++ (show condType) ++ " to " ++ (show targetTy))
+                    else do
+                        addError (Error 0 ("Cannot Assign " ++ (show condType) ++ " to " ++ (show targetTy)))
+                        return (Left ())
                 _ -> do
                     if condType == targetTy
                     then return (Left ())
-                    else throwError ("Cannot Assign " ++ (show condType) ++ " to " ++ (show targetTy))
+                    else do
+                        addError (Error 0 ("Cannot Assign " ++ (show condType) ++ " to " ++ (show targetTy)))
+                        return (Left ())
 checkStatement (IfStatement cond stat1 stat2) = do
     checkCondition cond
     checkStatement stat1
