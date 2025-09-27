@@ -65,11 +65,11 @@ getAddress name = do
     env <- get
     let vEnv = varEnv env
     case Map.lookup name (mapping vEnv) of
-        Just address -> return address
+        Just (_, address) -> return address
         _ -> throwError (show $ mapping vEnv)
 
-assignAddress :: String -> Address -> Interpreter ()
-assignAddress id address = do
+assignMemoryMapping :: String -> Address -> AssignedType -> Interpreter ()
+assignMemoryMapping id address ty = do
     env <- get
     let vEnv = varEnv env
     case address of
@@ -78,7 +78,7 @@ assignAddress id address = do
             let newVEnv = vEnv { mapping = newMapping}
             put env { varEnv = newVEnv }
         _ -> do
-            let newMapping = Map.insert id address (mapping vEnv)
+            let newMapping = Map.insert id (ty, address) (mapping vEnv)
             let newVEnv = vEnv { mapping = newMapping}
             put env { varEnv = newVEnv }
 
