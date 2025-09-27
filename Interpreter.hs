@@ -14,9 +14,10 @@ import qualified Data.Map as Map
 import qualified Data.Vector as V
 import Grammer
 import Parser
+import StaticChecker
 
 type Address       = Int
-type MemoryMapping = Map.Map String Address
+type MemoryMapping = Map.Map String (AssignedType, Address)
 type Memory        = V.Vector Value
 type ProcEnv       = Map.Map String Procedure
 type Params        = [(String, Value)] -- Maps id to type
