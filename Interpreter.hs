@@ -113,13 +113,13 @@ lookupVar name = do
         ArrayVal _ len -> getArrayContent (address + 1) len []
         _ -> return val
 
-assignVar :: String -> Value -> Interpreter ()
-assignVar name val = do
+assignVar :: String -> Value -> AssignedType -> Interpreter ()
+assignVar name val ty = do
     env <- get
     let vEnv = varEnv env
     case Map.lookup name (mapping vEnv) of
         -- Variable already exists
-        Just address -> do
+        Just (_, address) -> do
             let newMemory = memory vEnv V.// [(address, val)]
             let newVEnv = vEnv { memory = newMemory }
             put env { varEnv = newVEnv }
@@ -127,7 +127,7 @@ assignVar name val = do
         -- New variable, allocate memory
         Nothing -> do
             let address = nextFree vEnv
-            let newMapping = Map.insert name address (mapping vEnv)
+            let newMapping = Map.insert name (ty, address) (mapping vEnv)
             let newMemory = memory vEnv V.// [(address, val)]
             let newVEnv = vEnv { mapping = newMapping, memory = newMemory, nextFree = address + 1 }
             put env { varEnv = newVEnv }
