@@ -52,6 +52,7 @@ data Procedure = Procedure {
 } deriving (Show)
 
 type Interpreter a = StateT Env (ExceptT String IO) a
+
 data Value = IntVal (Maybe Int) 
             | BoolVal (Maybe Bool)
             | ArrayContent [Value]
