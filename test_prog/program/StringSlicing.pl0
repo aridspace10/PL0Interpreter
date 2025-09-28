@@ -1,0 +1,8 @@
+var s: string;
+    c: char;
+begin
+    a := "Hello there, Jackson";
+    write a[6:10];
+    write a[12:];
+    write a[:4]
+end

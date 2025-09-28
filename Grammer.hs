@@ -78,6 +78,8 @@ data Factor =
     | FactorLValue LValue
     | FactorParen Condition
     | ArrayLiteral [Exp]
+    | String [Char]
+    | CharLiteral Char
     | FactorCall Statement
     deriving (Show)
 
